@@ -1,12 +1,17 @@
 package com.apps.biteandsip.dto;
 
-public class RegisterRequest {
-    private String username;
-    private String password;
-    private String firstName;
-    private String lastName;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 
-    public RegisterRequest(String username, String password, String firstName, String lastName) {
+import java.util.List;
+
+public class RegisterRequestDTO {
+    @NotBlank(message="Username should not be empty") private String username;
+    @NotBlank(message="Password should not be empty") private String password;
+    @NotBlank(message="First name should not be empty") private String firstName;
+    @NotBlank(message="Last name should not be empty") private String lastName;
+
+    public RegisterRequestDTO(String username, String password, String firstName, String lastName) {
         this.username = username;
         this.password = password;
         this.firstName = firstName;
@@ -44,4 +49,5 @@ public class RegisterRequest {
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
+
 }

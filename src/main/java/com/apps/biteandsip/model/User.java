@@ -16,8 +16,6 @@ import java.util.Set;
 public class User implements Serializable, UserDetails {
     private static final long serialVersionUUID = -273828L;
 
-
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
@@ -34,7 +32,7 @@ public class User implements Serializable, UserDetails {
     private boolean isCredentialsNonExpired;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "user_roles",
+    @JoinTable(name = "user_authorities",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "authority_id", referencedColumnName = "id"))
     private Set<Authority> authorities;

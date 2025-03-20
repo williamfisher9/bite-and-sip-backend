@@ -35,10 +35,10 @@ public class AppConfigs {
         return args -> {
             if(authorityRepository.findAll().isEmpty()) {
                 LOG.info("Initializing database...");
-                authorityRepository.save(new Authority("ADMIN"));
-                authorityRepository.save(new Authority("CUSTOMER"));
-                authorityRepository.save(new Authority("KITCHEN"));
-                authorityRepository.save(new Authority("WAITER"));
+                authorityRepository.save(new Authority("ROLE_ADMIN"));
+                authorityRepository.save(new Authority("ROLE_CUSTOMER"));
+                authorityRepository.save(new Authority("ROLE_KITCHEN"));
+                authorityRepository.save(new Authority("ROLE_WAITER"));
                 LOG.info("Database initialized!");
             } else {
                 LOG.info(authorityRepository.findAll().toString());

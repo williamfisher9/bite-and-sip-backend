@@ -1,9 +1,8 @@
 package com.apps.biteandsip.controller;
 
-import com.apps.biteandsip.dto.LoginRequest;
-import com.apps.biteandsip.dto.RegisterRequest;
+import com.apps.biteandsip.dto.LoginRequestDTO;
+import com.apps.biteandsip.dto.RegisterRequestDTO;
 import com.apps.biteandsip.dto.ResponseMessage;
-import com.apps.biteandsip.model.User;
 import com.apps.biteandsip.security.JwtUtils;
 import com.apps.biteandsip.service.AuthService;
 import jakarta.validation.Valid;
@@ -12,9 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,14 +34,14 @@ public class UserController {
     }
 
     @RequestMapping(value = "/public/auth/register", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> createUser(@RequestBody @Valid RegisterRequest registerRequest){
-        ResponseMessage responseMessage = authService.createUser(registerRequest);
-        return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+    public ResponseEntity<ResponseMessage> createUser(@RequestBody @Valid RegisterRequestDTO registerRequestDTO){
+        ResponseMessage responseMessage = authService.createUser(registerRequestDTO);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 
     @RequestMapping(value = "/public/auth/login", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> authenticateUser(@RequestBody @Valid LoginRequest loginRequest){
-        ResponseMessage responseMessage = authService.authenticateUser(loginRequest);
-        return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+    public ResponseEntity<ResponseMessage> authenticateUser(@RequestBody @Valid LoginRequestDTO loginRequestDTO){
+        ResponseMessage responseMessage = authService.authenticateUser(loginRequestDTO);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 }

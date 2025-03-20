@@ -1,10 +1,12 @@
 package com.apps.biteandsip.dto;
 
-public class LoginRequest {
-    private String username;
-    private String password;
+import jakarta.validation.constraints.NotBlank;
 
-    public LoginRequest(String username, String password) {
+public class LoginRequestDTO {
+    @NotBlank private String username;
+    @NotBlank private String password;
+
+    public LoginRequestDTO(String username, String password) {
         this.username = username;
         this.password = password;
     }

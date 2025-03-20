@@ -24,6 +24,10 @@ public class Authority implements Serializable, GrantedAuthority {
         this.authority = authority;
     }
 
+    public void setAuthority(String authority) {
+        this.authority = authority;
+    }
+
     public Long getId() {
         return id;
     }
@@ -34,10 +38,6 @@ public class Authority implements Serializable, GrantedAuthority {
 
     public String getAuthority() {
         return authority;
-    }
-
-    public void setName(String authority) {
-        this.authority = authority;
     }
 
     @Override
