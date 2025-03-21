@@ -35,10 +35,7 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-
-        printRequestHeaders(request);
-
-        if(request.getHeader("authorization") == null){
+        if(request.getHeader("Authorization") == null){
             throw new AuthorizationHeaderNotFoundException("Authorization header not found.");
         }
 
@@ -68,24 +65,5 @@ public class JwtFilter extends OncePerRequestFilter {
     public boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
         return path.startsWith("/api/v1/public") || path.startsWith("/h2-console");
-    }
-
-
-
-    public void printRequestHeaders(HttpServletRequest req) {
-        Enumeration names = req.getHeaderNames();
-        if(names == null) {
-            return;
-        }
-        while(names.hasMoreElements()) {
-            String name = (String) names.nextElement();
-            Enumeration values = req.getHeaders(name);
-            if(values != null) {
-                while(values.hasMoreElements()) {
-                    String value = (String) values.nextElement();
-                    System.out.println(name + " : " + value );
-                }
-            }
-        }
     }
 }
