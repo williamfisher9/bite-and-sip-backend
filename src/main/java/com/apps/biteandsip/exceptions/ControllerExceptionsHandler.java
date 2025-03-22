@@ -31,4 +31,11 @@ public class ControllerExceptionsHandler {
         ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 400);
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
+
+    @ExceptionHandler(FoodCategoryNotFoundException.class)
+    public ResponseEntity<ResponseMessage> handleFoodCategoryNotFoundException(FoodCategoryNotFoundException exc){
+        ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 400);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
+    }
+
 }

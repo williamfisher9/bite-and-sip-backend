@@ -13,7 +13,7 @@ public class Authority implements Serializable, GrantedAuthority {
     private static final Long serialVersionUUID = -1289119L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String authority;

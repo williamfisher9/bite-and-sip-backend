@@ -1,4 +1,4 @@
-package com.apps.biteandsip.service;
+package com.apps.biteandsip.service.impl;
 
 import com.apps.biteandsip.dao.AuthorityRepository;
 import com.apps.biteandsip.dao.MenuRepository;
@@ -12,10 +12,10 @@ import com.apps.biteandsip.model.Authority;
 import com.apps.biteandsip.model.Menu;
 import com.apps.biteandsip.model.User;
 import com.apps.biteandsip.security.JwtUtils;
+import com.apps.biteandsip.service.AuthService;
+import com.apps.biteandsip.service.EmailService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -28,10 +28,9 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
-public class AuthServiceImpl implements AuthService{
+public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
@@ -117,29 +116,31 @@ public class AuthServiceImpl implements AuthService{
     }
 
     @Override
-    public User getUserById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new UsernameNotFoundException(""));
+    public ResponseMessage getUserById(Long id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new UsernameNotFoundException(""));
+        return new ResponseMessage(user, 200);
     }
 
     @Override
-    public User getUserByUsername(String username) {
-        return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException(""));
+    public ResponseMessage getUserByUsername(String username) {
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException(""));
+        return new ResponseMessage(user, 200);
     }
 
     @Override
-    public List<User> getUsers() {
-        return userRepository.findAll();
+    public ResponseMessage getUsers() {
+        return new ResponseMessage(userRepository.findAll(), 200);
     }
 
     @Override
-    public boolean deleteUserById(Long id) {
+    public ResponseMessage deleteUserById(Long id) {
         User user = userRepository.findById(id).orElseThrow(() -> new UsernameNotFoundException(""));
         userRepository.delete(user);
-        return true;
+        return new ResponseMessage(true, 200);
     }
 
     @Override
-    public User updateUser(Map<String, Object> userArgs) {
+    public ResponseMessage updateUser(Map<String, Object> userArgs) {
         return null;
     }
 }

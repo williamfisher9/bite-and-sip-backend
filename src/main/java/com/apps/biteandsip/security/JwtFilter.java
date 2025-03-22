@@ -35,13 +35,16 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        if(request.getHeader("Authorization") == null){
-            throw new AuthorizationHeaderNotFoundException("Authorization header not found.");
-        }
 
-        if(!request.getHeader("Authorization").startsWith("Bearer")){
-            throw new AuthorizationHeaderNotValidException("Authorization header does not start with a bearer token.");
-        }
+
+
+            if(request.getHeader("Authorization") == null){
+                throw new AuthorizationHeaderNotFoundException("Authorization header not found.");
+            }
+
+            if(!request.getHeader("Authorization").startsWith("Bearer")){
+                throw new AuthorizationHeaderNotValidException("Authorization header does not start with a bearer token.");
+            }
 
         String token = request.getHeader("Authorization").substring("Bearer ".length());
 
@@ -64,6 +67,8 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     public boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        return path.startsWith("/api/v1/public") || path.startsWith("/h2-console");
+        return path.startsWith("/api/v1/app/public")
+                || path.startsWith("/h2-console")
+                || path.startsWith("/favicon.ico");
     }
 }

@@ -12,9 +12,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.awt.print.Book;
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -54,6 +51,7 @@ public class AppConfigs {
                 menuRepository.save(new Menu("ADMINISTRATION", "ORDERS MANAGEMENT", "/biteandsip/orders-management"));
                 menuRepository.save(new Menu("ADMINISTRATION", "DASHBOARD", "/biteandsip/dashboard"));
                 menuRepository.save(new Menu("ADMINISTRATION", "PROMO CODES", "/biteandsip/promo"));
+                menuRepository.save(new Menu("ADMINISTRATION", "SETTINGS", "/biteandsip/settings"));
                 menuRepository.save(new Menu("PRIVATE", "MY ORDERS", "/biteandsip/my-orders"));
                 menuRepository.save(new Menu("PRIVATE", "PROFILE", "/biteandsip/profile"));
 

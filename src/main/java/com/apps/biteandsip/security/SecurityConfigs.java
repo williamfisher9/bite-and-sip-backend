@@ -68,8 +68,8 @@ public class SecurityConfigs {
         http
                 .cors(cors-> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf-> csrf.disable())
-                .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/public/**", "/h2-console/**").permitAll())
-                .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/**").authenticated())
+                .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/public/**", "/h2-console/**", "/favicon.ico").permitAll())
+                .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/admin/**").hasRole("ADMIN").anyRequest().authenticated())
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling((exception) -> exception.authenticationEntryPoint(authenticationEntryPoint))

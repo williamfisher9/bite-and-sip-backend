@@ -13,9 +13,9 @@ import java.util.Map;
 public interface AuthService {
     ResponseMessage createUser(RegisterRequestDTO registerRequestDTO);
     ResponseMessage authenticateUser(LoginRequestDTO loginRequestDTO);
-    User getUserById(Long id);
-    User getUserByUsername(String username);
-    List<User> getUsers();
-    boolean deleteUserById(Long id);
-    User updateUser(Map<String, Object> userArgs);
+    ResponseMessage getUserById(Long id);
+    ResponseMessage getUserByUsername(String username);
+    ResponseMessage getUsers();
+    ResponseMessage deleteUserById(Long id);
+    ResponseMessage updateUser(Map<String, Object> userArgs);
 }

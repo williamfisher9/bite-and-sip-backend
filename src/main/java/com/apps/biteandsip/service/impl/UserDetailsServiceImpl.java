@@ -1,4 +1,4 @@
-package com.apps.biteandsip.service;
+package com.apps.biteandsip.service.impl;
 
 import com.apps.biteandsip.dao.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
