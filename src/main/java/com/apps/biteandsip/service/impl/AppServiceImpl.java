@@ -12,10 +12,25 @@ import com.apps.biteandsip.model.FoodCategory;
 import com.apps.biteandsip.model.FoodItem;
 import com.apps.biteandsip.model.PromoCode;
 import com.apps.biteandsip.service.AppService;
+import com.apps.biteandsip.service.StorageService;
 import jdk.jfr.Category;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.UUID;
 
 @Component
 public class AppServiceImpl implements AppService {
@@ -24,20 +39,25 @@ public class AppServiceImpl implements AppService {
     private final PromoRepository promoRepository;
     private final SettingsRepository settingsRepository;
     private final ModelMapper mapper;
+    private final StorageService storageService;
 
     @Autowired
-    public AppServiceImpl(FoodCategoryRepository foodCategoryRepository, FoodItemRepository foodItemRepository, PromoRepository promoRepository, SettingsRepository settingsRepository, ModelMapper mapper) {
+    public AppServiceImpl(FoodCategoryRepository foodCategoryRepository, FoodItemRepository foodItemRepository, PromoRepository promoRepository, SettingsRepository settingsRepository, ModelMapper mapper, StorageService storageService) {
         this.foodCategoryRepository = foodCategoryRepository;
         this.foodItemRepository = foodItemRepository;
         this.promoRepository = promoRepository;
         this.settingsRepository = settingsRepository;
         this.mapper = mapper;
+        this.storageService = storageService;
     }
 
     @Override
-    public ResponseMessage createCategory(FoodCategoryDTO foodCategoryDTO) {
-        FoodCategory foodCategory = mapper.map(foodCategoryDTO, FoodCategory.class);
+    public ResponseMessage createCategory(MultipartFile file, String name) {
+        String fileName = storageService.store(file);
+
+        FoodCategory foodCategory = new FoodCategory(name, fileName);
         foodCategory.setActive(false);
+
         return new ResponseMessage(foodCategoryRepository.save(foodCategory), 200);
     }
 
@@ -66,7 +86,23 @@ public class AppServiceImpl implements AppService {
 
     @Override
     public ResponseMessage getFoodCategories() {
-        return new ResponseMessage(foodCategoryRepository.findAll(), 200);
+        List<FoodCategory> categories = foodCategoryRepository.findAll();
+        for(FoodCategory foodCategory: categories){
+            foodCategory.setImageSource("http://localhost:8080/api/v1/app/public/food-categories/image/" + foodCategory.getImageSource());
+        }
+        return new ResponseMessage(categories, 200);
+    }
+
+    @Override
+    public ResponseMessage getFoodCategoryById(Long id) {
+        FoodCategory foodCategory = foodCategoryRepository.findById(id).orElseThrow(() -> new FoodCategoryNotFoundException("Category was not found"));
+        foodCategory.setImageSource("http://localhost:8080/api/v1/app/public/food-categories/image/" + foodCategory.getImageSource());
+        return new ResponseMessage(foodCategory, 200);
+    }
+
+    @Override
+    public ResponseMessage searchFoodCategories(String val) {
+        return new ResponseMessage(foodCategoryRepository.findByNameContainingIgnoreCase(val), 200);
     }
 
     @Override

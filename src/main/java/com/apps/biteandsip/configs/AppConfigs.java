@@ -44,7 +44,7 @@ public class AppConfigs {
                 menuRepository.save(new Menu("PUBLIC", "ABOUT", "/biteandsip/about"));
                 menuRepository.save(new Menu("PUBLIC", "CONTACT", "/biteandsip/contact"));
                 menuRepository.save(new Menu("ADMINISTRATION", "MENU MANAGEMENT", "/biteandsip/menu-management"));
-                menuRepository.save(new Menu("ADMINISTRATION", "FOOD CATEGORIES MANAGEMENT", "/biteandsip/categories-management"));
+                menuRepository.save(new Menu("ADMINISTRATION", "FOOD CATEGORIES MANAGEMENT", "/biteandsip/admin/food-categories"));
                 menuRepository.save(new Menu("ADMINISTRATION", "TABLES MANAGEMENT", "/biteandsip/tables-management"));
                 menuRepository.save(new Menu("ADMINISTRATION", "EMPLOYEES MANAGEMENT", "/biteandsip/employees-management"));
                 menuRepository.save(new Menu("ADMINISTRATION", "CUSTOMERS MANAGEMENT", "/biteandsip/customers-management"));

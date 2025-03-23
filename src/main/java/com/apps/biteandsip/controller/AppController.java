@@ -8,18 +8,34 @@ import com.apps.biteandsip.model.FoodCategory;
 import com.apps.biteandsip.model.FoodItem;
 import com.apps.biteandsip.model.PromoCode;
 import com.apps.biteandsip.service.AppService;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
 
 @RestController
 @CrossOrigin
 @RequestMapping("/api/v1/app")
 public class AppController {
     private final AppService appService;
+
+    @Value("${file.upload.directory}")
+    private String fileUploadDirectory;
 
     @Autowired
     public AppController(AppService appService) {
@@ -32,15 +48,53 @@ public class AppController {
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 
+    @RequestMapping(value = "/public/food-categories/image/{imageName}", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
+    public ResponseEntity<Resource> getFoodCategories(@PathVariable("imageName") String imageName){
+        String filePath = fileUploadDirectory + imageName;
+        Path path = new File(filePath).toPath();
+        FileSystemResource resource = new FileSystemResource(path);
+        try {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(Files.probeContentType(path)))
+                    .body(resource);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @RequestMapping(value = "/public/food-items", method = RequestMethod.GET)
     public ResponseEntity<ResponseMessage> getFoodItems(){
         ResponseMessage responseMessage = appService.getFoodItems();
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 
-    @RequestMapping(value = "/admin/food-categories", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> createFoodCategory(@RequestBody @Valid FoodCategoryDTO foodCategory){
-        ResponseMessage responseMessage = appService.createCategory(foodCategory);
+    @RequestMapping(value = "/admin/food-categories/new", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseMessage> createFoodCategory(@RequestParam("name") String name, @RequestPart("file") MultipartFile file){
+        ResponseMessage responseMessage = appService.createCategory(file, name);
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/food-categories", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> adminFoodCategories(){
+        ResponseMessage responseMessage = appService.getFoodCategories();
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/food-categories/search", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> adminFoodCategoriesSearch(@RequestBody Map<String, String> values){
+        ResponseMessage responseMessage = null;
+        if(!values.get("val").equalsIgnoreCase("-")){
+            responseMessage = appService.searchFoodCategories(values.get("val"));
+        } else {
+            responseMessage = appService.getFoodCategories();
+        }
+
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/food-categories/{itemId}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> adminGetFoodCategoryById(@PathVariable("itemId") Long itemId){
+        ResponseMessage responseMessage = appService.getFoodCategoryById(itemId);
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
