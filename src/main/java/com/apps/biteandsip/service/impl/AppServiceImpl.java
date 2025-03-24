@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Component
@@ -52,11 +53,25 @@ public class AppServiceImpl implements AppService {
     }
 
     @Override
-    public ResponseMessage createCategory(MultipartFile file, String name) {
+    public ResponseMessage createCategory(MultipartFile file, String name, boolean active) {
         String fileName = storageService.store(file);
 
         FoodCategory foodCategory = new FoodCategory(name, fileName);
-        foodCategory.setActive(false);
+        foodCategory.setActive(active);
+
+        return new ResponseMessage(foodCategoryRepository.save(foodCategory), 201);
+    }
+
+    @Override
+    public ResponseMessage updateCategory(Long id, String name, boolean active, MultipartFile file) {
+        FoodCategory foodCategory = foodCategoryRepository.findById(id).orElseThrow(() -> new FoodCategoryNotFoundException("Food category was not found"));
+        if(file != null){
+            String fileName = storageService.store(file);
+            foodCategory.setImageSource(fileName);
+        }
+
+        foodCategory.setActive(active);
+        foodCategory.setName(name);
 
         return new ResponseMessage(foodCategoryRepository.save(foodCategory), 200);
     }

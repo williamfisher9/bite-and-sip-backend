@@ -9,9 +9,12 @@ import com.apps.biteandsip.model.PromoCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Map;
+
 @Service
 public interface AppService {
-    ResponseMessage createCategory(MultipartFile file, String name);
+    ResponseMessage createCategory(MultipartFile file, String name, boolean active);
+    ResponseMessage updateCategory(Long id ,String name, boolean active, MultipartFile file);
     ResponseMessage createFoodItem(FoodItemDTO foodItem);
     ResponseMessage createPromoCode(PromoCode promoCode);
     ResponseMessage getParamValueByName(String name);

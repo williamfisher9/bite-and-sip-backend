@@ -1,14 +1,9 @@
 package com.apps.biteandsip.controller;
 
-import com.apps.biteandsip.dto.FoodCategoryDTO;
 import com.apps.biteandsip.dto.FoodItemDTO;
-import com.apps.biteandsip.dto.RegisterRequestDTO;
 import com.apps.biteandsip.dto.ResponseMessage;
-import com.apps.biteandsip.model.FoodCategory;
-import com.apps.biteandsip.model.FoodItem;
 import com.apps.biteandsip.model.PromoCode;
 import com.apps.biteandsip.service.AppService;
-import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -69,8 +63,14 @@ public class AppController {
     }
 
     @RequestMapping(value = "/admin/food-categories/new", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ResponseMessage> createFoodCategory(@RequestParam("name") String name, @RequestPart("file") MultipartFile file){
-        ResponseMessage responseMessage = appService.createCategory(file, name);
+    public ResponseEntity<ResponseMessage> createFoodCategory(@RequestParam("name") String name,@RequestParam("active") boolean active, @RequestPart("file") MultipartFile file){
+        ResponseMessage responseMessage = appService.createCategory(file, name, active);
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/food-categories/update/{id}", method = RequestMethod.PUT, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseMessage> updateFoodCategory(@PathVariable("id") Long id, @RequestParam("name") String name,@RequestParam("active") boolean active, @RequestPart(value = "file", required = false) MultipartFile file){
+        ResponseMessage responseMessage = appService.updateCategory(id, name, active, file);
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
