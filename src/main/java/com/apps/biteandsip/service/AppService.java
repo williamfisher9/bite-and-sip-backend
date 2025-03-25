@@ -14,6 +14,9 @@ import java.util.Map;
 @Service
 public interface AppService {
     ResponseMessage createCategory(MultipartFile file, String name, boolean active);
+
+    ResponseMessage createFoodItem(MultipartFile file, String name, boolean active, String price, String description, Long categoryId);
+
     ResponseMessage updateCategory(Long id ,String name, boolean active, MultipartFile file);
     ResponseMessage createFoodItem(FoodItemDTO foodItem);
     ResponseMessage createPromoCode(PromoCode promoCode);
@@ -21,5 +24,9 @@ public interface AppService {
     ResponseMessage getFoodCategories();
     ResponseMessage getFoodCategoryById(Long id);
     ResponseMessage searchFoodCategories(String val);
+    ResponseMessage searchFoodItems(String val);
     ResponseMessage getFoodItems();
+    ResponseMessage getFoodItemById(Long id);
+    ResponseMessage getFoodItemsByCategoryId(Long id);
+    ResponseMessage updateFoodItem(Long id ,String name, boolean active, MultipartFile file, String price, String description, Long categoryId);
 }
