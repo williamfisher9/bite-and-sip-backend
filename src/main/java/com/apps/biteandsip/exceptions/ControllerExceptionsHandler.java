@@ -1,6 +1,7 @@
 package com.apps.biteandsip.exceptions;
 
 import com.apps.biteandsip.dto.ResponseMessage;
+import com.stripe.exception.StripeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import javax.management.relation.RoleNotFoundException;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 
 @RestControllerAdvice
@@ -35,6 +37,18 @@ public class ControllerExceptionsHandler {
     @ExceptionHandler(FoodCategoryNotFoundException.class)
     public ResponseEntity<ResponseMessage> handleFoodCategoryNotFoundException(FoodCategoryNotFoundException exc){
         ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 400);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
+    }
+
+    @ExceptionHandler(StripeException.class)
+    public ResponseEntity<ResponseMessage> handleStripeException(StripeException exc){
+        ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 400);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
+    }
+
+    @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
+    public ResponseEntity<ResponseMessage> handleSQLIntegrityConstraintViolationException(SQLIntegrityConstraintViolationException exc){
+        ResponseMessage responseMessage = new ResponseMessage(exc.getMessage().contains("Duplicate") ? "Record with the same identifier exists" : exc.getMessage(), 400);
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 

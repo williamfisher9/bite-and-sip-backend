@@ -1,9 +1,11 @@
 package com.apps.biteandsip.controller;
 
+import com.apps.biteandsip.dto.CouponDTO;
 import com.apps.biteandsip.dto.FoodItemDTO;
 import com.apps.biteandsip.dto.ResponseMessage;
-import com.apps.biteandsip.model.PromoCode;
+import com.apps.biteandsip.dto.StripePaymentIntentDTO;
 import com.apps.biteandsip.service.AppService;
+import com.stripe.exception.StripeException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +32,8 @@ public class AppController {
 
     @Value("${file.upload.directory}")
     private String fileUploadDirectory;
+
+
 
     @Autowired
     public AppController(AppService appService) {
@@ -162,9 +166,58 @@ public class AppController {
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
-    @RequestMapping(value = "/admin/promo-codes", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> createFoodItem(@RequestBody @Valid PromoCode promoCode){
-        ResponseMessage responseMessage = appService.createPromoCode(promoCode);
+    @RequestMapping(value = "/checkout/create-payment-intent", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> createPaymentIntent(@RequestBody StripePaymentIntentDTO intentDTO) throws StripeException {
+        return new ResponseEntity<>(appService.createPaymentIntent(intentDTO), HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/checkout/{id}/confirm", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> confirmPaymentIntent(@PathVariable("id") String id) {
+        return new ResponseEntity<>(appService.confirmPaymentIntent(id), HttpStatus.OK);
+    }
+
+
+
+
+    @RequestMapping(value = "/admin/coupons/new", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> createCoupon(@RequestBody CouponDTO couponDTO){
+        ResponseMessage responseMessage = appService.createCoupon(couponDTO);
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/coupons/{itemId}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> adminGetCouponById(@PathVariable("itemId") Long itemId){
+        ResponseMessage responseMessage = appService.getCouponById(itemId);
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/coupons", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> getCoupons(){
+        ResponseMessage responseMessage = appService.getCoupons();
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/coupons/update/{id}", method = RequestMethod.PUT)
+    public ResponseEntity<ResponseMessage> updateFoodCategory(@PathVariable("id") Long id, @RequestBody CouponDTO couponDTO){
+        ResponseMessage responseMessage = appService.updateCoupon(id, couponDTO);
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/coupons/search", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> adminSearchCoupons(@RequestBody Map<String, String> values){
+        ResponseMessage responseMessage = null;
+        if(!values.get("val").equalsIgnoreCase("-")){
+            responseMessage = appService.searchCoupons(values.get("val"));
+        } else {
+            responseMessage = appService.getCoupons();
+        }
+
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/public/coupons/code/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> getCouponByCode(@PathVariable("code") String code){
+        ResponseMessage responseMessage = appService.getCouponByCode(code);
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 }

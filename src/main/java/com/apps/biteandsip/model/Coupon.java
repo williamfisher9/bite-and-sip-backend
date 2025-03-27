@@ -6,8 +6,8 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 @Entity
-@Table(name = "promo_codes")
-public class PromoCode {
+@Table(name = "coupons", uniqueConstraints = {@UniqueConstraint(columnNames = "code")})
+public class Coupon {
     private static final Long serialVersionUUID = -37712328L;
 
     @Id
@@ -20,10 +20,10 @@ public class PromoCode {
     private LocalDate toDate;
     private float amount;
 
-    public PromoCode() {
+    public Coupon() {
     }
 
-    public PromoCode(String code, boolean active, LocalDate fromDate, LocalDate toDate, float amount) {
+    public Coupon(String code, boolean active, LocalDate fromDate, LocalDate toDate, float amount) {
         this.code = code;
         this.active = active;
         this.fromDate = fromDate;
@@ -83,8 +83,8 @@ public class PromoCode {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        PromoCode promoCode = (PromoCode) o;
-        return active == promoCode.active && Float.compare(amount, promoCode.amount) == 0 && Objects.equals(id, promoCode.id) && Objects.equals(code, promoCode.code) && Objects.equals(fromDate, promoCode.fromDate) && Objects.equals(toDate, promoCode.toDate);
+        Coupon coupon = (Coupon) o;
+        return active == coupon.active && Float.compare(amount, coupon.amount) == 0 && Objects.equals(id, coupon.id) && Objects.equals(code, coupon.code) && Objects.equals(fromDate, coupon.fromDate) && Objects.equals(toDate, coupon.toDate);
     }
 
     @Override
@@ -94,7 +94,7 @@ public class PromoCode {
 
     @Override
     public String toString() {
-        return "PromoCode{" +
+        return "Coupon{" +
                 "id=" + id +
                 ", code='" + code + '\'' +
                 ", active=" + active +
