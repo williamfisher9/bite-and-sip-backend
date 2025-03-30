@@ -10,6 +10,7 @@ public class RegisterRequestDTO {
     @NotBlank(message="Password should not be empty") private String password;
     @NotBlank(message="First name should not be empty") private String firstName;
     @NotBlank(message="Last name should not be empty") private String lastName;
+    private Long userType;
 
     public RegisterRequestDTO(String username, String password, String firstName, String lastName) {
         this.username = username;
@@ -50,4 +51,11 @@ public class RegisterRequestDTO {
         this.lastName = lastName;
     }
 
+    public Long getUserType() {
+        return userType;
+    }
+
+    public void setUserType(Long userType) {
+        this.userType = userType;
+    }
 }

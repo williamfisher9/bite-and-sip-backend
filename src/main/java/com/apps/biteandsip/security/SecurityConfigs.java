@@ -70,7 +70,7 @@ public class SecurityConfigs {
                 .csrf(csrf-> csrf.disable())
                 .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/public/**", "/h2-console/**", "/favicon.ico").permitAll())
                 .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/admin/**").hasRole("ADMIN"))
-                .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/checkout/**").hasRole("ADMIN"))
+                .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/checkout/**", "/api/v1/app/customer/**").hasRole("CUSTOMER"))
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling((exception) -> exception.authenticationEntryPoint(authenticationEntryPoint))

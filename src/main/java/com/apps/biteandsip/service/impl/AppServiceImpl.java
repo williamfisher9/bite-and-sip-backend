@@ -1,20 +1,16 @@
 package com.apps.biteandsip.service.impl;
 
-import com.apps.biteandsip.dao.FoodCategoryRepository;
-import com.apps.biteandsip.dao.FoodItemRepository;
-import com.apps.biteandsip.dao.CouponRepository;
-import com.apps.biteandsip.dao.SettingsRepository;
-import com.apps.biteandsip.dto.CouponDTO;
-import com.apps.biteandsip.dto.FoodItemDTO;
-import com.apps.biteandsip.dto.ResponseMessage;
-import com.apps.biteandsip.dto.StripePaymentIntentDTO;
+import com.apps.biteandsip.dao.*;
+import com.apps.biteandsip.dto.*;
+import com.apps.biteandsip.enums.OrderStatus;
 import com.apps.biteandsip.exceptions.FoodCategoryNotFoundException;
 import com.apps.biteandsip.exceptions.FoodItemNotFoundException;
-import com.apps.biteandsip.model.Coupon;
-import com.apps.biteandsip.model.FoodCategory;
-import com.apps.biteandsip.model.FoodItem;
+import com.apps.biteandsip.model.*;
 import com.apps.biteandsip.service.AppService;
 import com.apps.biteandsip.service.StorageService;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -25,12 +21,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.awt.print.Book;
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class AppServiceImpl implements AppService {
@@ -40,18 +43,26 @@ public class AppServiceImpl implements AppService {
     private final SettingsRepository settingsRepository;
     private final ModelMapper mapper;
     private final StorageService storageService;
+    private final UserRepository userRepository;
+    private final AuthorityRepository authorityRepository;
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
 
     @Value("${stripe.api.key}")
     private String stripeApiKey;
 
     @Autowired
-    public AppServiceImpl(FoodCategoryRepository foodCategoryRepository, FoodItemRepository foodItemRepository, CouponRepository couponRepository, SettingsRepository settingsRepository, ModelMapper mapper, StorageService storageService) {
+    public AppServiceImpl(FoodCategoryRepository foodCategoryRepository, FoodItemRepository foodItemRepository, CouponRepository couponRepository, SettingsRepository settingsRepository, ModelMapper mapper, StorageService storageService, UserRepository userRepository, AuthorityRepository authorityRepository, OrderRepository orderRepository, OrderItemRepository orderItemRepository) {
         this.foodCategoryRepository = foodCategoryRepository;
         this.foodItemRepository = foodItemRepository;
         this.couponRepository = couponRepository;
         this.settingsRepository = settingsRepository;
         this.mapper = mapper;
         this.storageService = storageService;
+        this.userRepository = userRepository;
+        this.authorityRepository = authorityRepository;
+        this.orderRepository = orderRepository;
+        this.orderItemRepository = orderItemRepository;
     }
 
     @Override
@@ -253,7 +264,12 @@ public class AppServiceImpl implements AppService {
         System.out.println(paymentIntent.getClientSecret());
         System.out.println(paymentIntent.getStatus());
         System.out.println(paymentIntent.getId());
-        return new ResponseMessage(paymentIntent.getClientSecret(), 200);
+
+        Map<String, String> paymentIntentDetails = new HashMap<>();
+        paymentIntentDetails.put("clientSecret", paymentIntent.getClientSecret());
+        paymentIntentDetails.put("paymentId", paymentIntent.getId());
+
+        return new ResponseMessage(paymentIntentDetails, 200);
     }
 
     @Override
@@ -277,8 +293,6 @@ public class AppServiceImpl implements AppService {
         } catch (StripeException e) {
             throw new RuntimeException(e);
         }
-
-
     }
 
     @Override
@@ -339,6 +353,18 @@ public class AppServiceImpl implements AppService {
     }
 
     @Override
+    public ResponseMessage getUsersByType(String userType) {
+        List<User> users = new ArrayList<>();
+        if(userType.equalsIgnoreCase("customers")){
+            users = userRepository.findByUserType("CUSTOMER");
+        } else if(userType.equalsIgnoreCase("employees")) {
+            users = userRepository.findByUserTypeNot("CUSTOMER");
+        }
+        
+        return new ResponseMessage(users, 200);
+    }
+
+    @Override
     public ResponseMessage getCouponByCode(String code) {
         System.out.println(code);
         Coupon coupon = null;
@@ -346,5 +372,97 @@ public class AppServiceImpl implements AppService {
             coupon = couponRepository.findByCode(code).get(0);
         }
         return new ResponseMessage(coupon, coupon == null ? 404 : 200);
+    }
+
+    @Override
+    public ResponseMessage searchUsers(String val, String userType) {
+        List<User> users;
+        if(val.isEmpty()){
+            users = userRepository.findByUserType(userType);
+        } else {
+            if(userType.equalsIgnoreCase("customers")){
+                users = userRepository.searchByUsernameAndUserType(val, "CUSTOMER");
+            } else {
+                users = userRepository.searchByUsernameAndUserTypeNot(val, "CUSTOMER");
+            }
+        }
+
+        return new ResponseMessage(users, 200);
+    }
+
+    @Override
+    public ResponseMessage getEmployeeRoles() {
+        List<Authority> authorities = authorityRepository.findAll().stream().filter(item -> !item.getAuthority().equalsIgnoreCase("ROLE_CUSTOMER") && !item.getAuthority().equalsIgnoreCase("ROLE_ADMIN")).toList();;
+        return new ResponseMessage(authorities, 200);
+    }
+
+    @Override
+    @Transactional
+    public ResponseMessage confirmOrder(Map<String, Object> items){
+        String confirmationTokenId = (String) items.get("confirmationTokenId");
+        User user = userRepository.findById(Long.valueOf((String) items.get("customerId"))).orElseThrow(() -> new UsernameNotFoundException(""));
+
+        Order order = new Order();
+        order.setCustomer(user);
+        order.setCreationDate(LocalDateTime.now());
+        order.setLastUpdateUpdate(LocalDateTime.now());
+        order.setStatus(OrderStatus.RECEIVED);
+
+        Set<OrderItem> orderItems = new HashSet<>();
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for(Object cartItem : (ArrayList<?>) items.get("cartItems")){
+            CartItemDTO cartItemDTO = mapper.map(cartItem, CartItemDTO.class);
+            FoodItem foodItem = foodItemRepository.findById(cartItemDTO.getFoodItemId()).orElseThrow(() -> new FoodItemNotFoundException("Food item was not found"));
+            OrderItem orderItem = new OrderItem();
+            orderItem.setItem(foodItem);
+            orderItem.setQuantity(cartItemDTO.getQuantity());
+            orderItem.setPricePerItem(BigDecimal.valueOf(foodItem.getPrice()));
+            orderItem.setTotalPricePerItem(BigDecimal.valueOf(foodItem.getPrice()).multiply(BigDecimal.valueOf(cartItemDTO.getQuantity())));
+            orderItems.add(orderItem);
+            orderItem.setOrder(order);
+            totalAmount.add(BigDecimal.valueOf(foodItem.getPrice()).multiply(BigDecimal.valueOf(cartItemDTO.getQuantity())));
+        }
+
+        order.setTotalPrice(totalAmount);
+        order.setDeliveryFee(BigDecimal.valueOf(5L));
+        order.setItems(orderItems);
+
+        Stripe.apiKey = stripeApiKey;
+
+        PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
+                .setAmount(1099L)
+                .setCurrency("usd")
+                .setAutomaticPaymentMethods(PaymentIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true).build())
+                .setConfirm(true)
+                .setConfirmationToken(confirmationTokenId)
+                .setReturnUrl("http://localhost:5173/biteandsip/payment-status")
+                .build();
+
+        PaymentIntent resource = null;
+        try {
+            resource = PaymentIntent.create(params);
+            if(resource.getStatus().equalsIgnoreCase("succeeded")){
+                order.setPaymentId(resource.getId());
+                orderRepository.save(order);
+                return new ResponseMessage("success", 200);
+            } else {
+                return new ResponseMessage("STRIPE: " + resource.getId() + " " + resource.getStatus(), 400);
+            }
+        } catch (StripeException e) {
+            throw new RuntimeException(e);
+        }
+
+
+    }
+
+    @Override
+    public ResponseMessage getCustomerOrders(Long customerId) {
+        return new ResponseMessage(orderRepository.findByCustomerId(customerId), 200);
+    }
+
+    @Override
+    public ResponseMessage getAdminOrders() {
+        return new ResponseMessage(orderRepository.findAll(), 200);
     }
 }

@@ -1,11 +1,14 @@
 package com.apps.biteandsip.controller;
 
-import com.apps.biteandsip.dto.CouponDTO;
-import com.apps.biteandsip.dto.FoodItemDTO;
-import com.apps.biteandsip.dto.ResponseMessage;
-import com.apps.biteandsip.dto.StripePaymentIntentDTO;
+import com.apps.biteandsip.dto.*;
+import com.apps.biteandsip.model.FoodItem;
+import com.apps.biteandsip.model.Order;
 import com.apps.biteandsip.service.AppService;
+import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
+import com.stripe.model.PaymentIntent;
+import com.stripe.param.PaymentIntentConfirmParams;
+import com.stripe.param.PaymentIntentCreateParams;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +25,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -33,6 +38,8 @@ public class AppController {
     @Value("${file.upload.directory}")
     private String fileUploadDirectory;
 
+    @Value("${stripe.api.key}")
+    private String stripeApiKey;
 
 
     @Autowired
@@ -218,6 +225,55 @@ public class AppController {
     @RequestMapping(value = "/public/coupons/code/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseMessage> getCouponByCode(@PathVariable("code") String code){
         ResponseMessage responseMessage = appService.getCouponByCode(code);
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+
+
+    @RequestMapping(value = "/admin/users/{userType}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> adminGetUsersByType(@PathVariable("userType") String userType){
+        ResponseMessage responseMessage = appService.getUsersByType(userType);
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/users/{userType}/search", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> adminSearchCustomers(@PathVariable("userType") String userType, @RequestBody Map<String, String> values){
+        ResponseMessage responseMessage = null;
+        if(!values.get("val").equalsIgnoreCase("")){
+            responseMessage = appService.searchUsers(values.get("val"), userType);
+        } else {
+            responseMessage = appService.getUsersByType(userType);
+        }
+
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/roles", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> adminGetRoles(){
+        ResponseMessage responseMessage = appService.getEmployeeRoles();
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+
+    @RequestMapping(value = "/checkout/confirm-order", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> confirmOrder(@RequestBody Map<String, Object> items)  {
+        return new ResponseEntity<>(appService.confirmOrder(items), HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/checkout/create-confirm-intent", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> createConfirmIntent(@RequestBody Map<String, Object> items)  {
+        return new ResponseEntity<>(appService.confirmOrder(items), HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/customer/{customerId}/orders", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> customerGetOrders(@PathVariable("customerId") Long customerId){
+        ResponseMessage responseMessage = appService.getCustomerOrders(customerId);
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/orders", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> customerGetOrders(){
+        ResponseMessage responseMessage = appService.getAdminOrders();
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 }

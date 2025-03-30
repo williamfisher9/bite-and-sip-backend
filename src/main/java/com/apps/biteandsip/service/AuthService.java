@@ -1,5 +1,6 @@
 package com.apps.biteandsip.service;
 
+import com.apps.biteandsip.dto.EmployeeDTO;
 import com.apps.biteandsip.dto.LoginRequestDTO;
 import com.apps.biteandsip.dto.RegisterRequestDTO;
 import com.apps.biteandsip.dto.ResponseMessage;
@@ -18,4 +19,8 @@ public interface AuthService {
     ResponseMessage getUsers();
     ResponseMessage deleteUserById(Long id);
     ResponseMessage updateUser(Map<String, Object> userArgs);
+
+    ResponseMessage createEmployee(RegisterRequestDTO registerRequestDTO);
+    ResponseMessage getEmployeeById(Long id);
+    ResponseMessage updateEmployee(Long id, EmployeeDTO employeeDTO);
 }

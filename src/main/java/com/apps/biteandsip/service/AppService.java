@@ -1,12 +1,13 @@
 package com.apps.biteandsip.service;
 
-import com.apps.biteandsip.dto.CouponDTO;
-import com.apps.biteandsip.dto.FoodItemDTO;
-import com.apps.biteandsip.dto.ResponseMessage;
-import com.apps.biteandsip.dto.StripePaymentIntentDTO;
+import com.apps.biteandsip.dto.*;
+import com.apps.biteandsip.model.Order;
 import com.stripe.exception.StripeException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public interface AppService {
@@ -35,4 +36,13 @@ public interface AppService {
     ResponseMessage getCouponByCode(String code);
     ResponseMessage updateCoupon(Long id, CouponDTO couponDTO);
     ResponseMessage searchCoupons(String val);
+
+    ResponseMessage getUsersByType(String userType);
+    ResponseMessage searchUsers(String val, String userType);
+
+    ResponseMessage getEmployeeRoles();
+
+    ResponseMessage confirmOrder(Map<String, Object> items);
+    ResponseMessage getCustomerOrders(Long customerId);
+    ResponseMessage getAdminOrders();
 }

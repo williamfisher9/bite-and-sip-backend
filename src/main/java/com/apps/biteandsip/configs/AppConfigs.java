@@ -43,17 +43,18 @@ public class AppConfigs {
                 menuRepository.save(new Menu("PUBLIC", "MENU", "/biteandsip/menu"));
                 menuRepository.save(new Menu("PUBLIC", "ABOUT", "/biteandsip/about"));
                 menuRepository.save(new Menu("PUBLIC", "CONTACT", "/biteandsip/contact"));
+                menuRepository.save(new Menu("ADMINISTRATION", "DASHBOARD", "/biteandsip/admin/dashboard"));
                 menuRepository.save(new Menu("ADMINISTRATION", "FOOD ITEMS", "/biteandsip/admin/food-items"));
                 menuRepository.save(new Menu("ADMINISTRATION", "FOOD CATEGORIES", "/biteandsip/admin/food-categories"));
                 menuRepository.save(new Menu("ADMINISTRATION", "COUPONS", "/biteandsip/admin/coupons"));
-                menuRepository.save(new Menu("ADMINISTRATION", "TABLES RESERVATIONS", "/biteandsip/admin/tables-reservations"));
+
                 menuRepository.save(new Menu("ADMINISTRATION", "EMPLOYEES", "/biteandsip/admin/employees"));
                 menuRepository.save(new Menu("ADMINISTRATION", "CUSTOMERS", "/biteandsip/admin/customers"));
                 menuRepository.save(new Menu("ADMINISTRATION", "ORDERS", "/biteandsip/admin/orders"));
-                menuRepository.save(new Menu("ADMINISTRATION", "DASHBOARD", "/biteandsip/admin/dashboard"));
 
+                menuRepository.save(new Menu("ADMINISTRATION", "TABLES RESERVATIONS", "/biteandsip/admin/tables-reservations"));
                 menuRepository.save(new Menu("ADMINISTRATION", "SETTINGS", "/biteandsip/admin/settings"));
-                menuRepository.save(new Menu("PRIVATE", "MY ORDERS", "/biteandsip/my-orders"));
+                menuRepository.save(new Menu("PRIVATE", "MY ORDERS", "/biteandsip/orders"));
                 menuRepository.save(new Menu("PRIVATE", "PROFILE", "/biteandsip/profile"));
 
 
@@ -85,10 +86,10 @@ public class AppConfigs {
                         menuRepository.findByMenuItem("PROFILE").get()
                 ));
 
-                authorityRepository.save(new Authority("ADMIN", adminMenu));
-                authorityRepository.save(new Authority("CUSTOMER", customerMenu));
-                authorityRepository.save(new Authority("KITCHEN"));
-                authorityRepository.save(new Authority("WAITER"));
+                authorityRepository.save(new Authority("ROLE_ADMIN", adminMenu));
+                authorityRepository.save(new Authority("ROLE_CUSTOMER", customerMenu));
+                authorityRepository.save(new Authority("ROLE_KITCHEN"));
+                authorityRepository.save(new Authority("ROLE_WAITER"));
 
                 LOG.info("Database initialized!");
             } else {

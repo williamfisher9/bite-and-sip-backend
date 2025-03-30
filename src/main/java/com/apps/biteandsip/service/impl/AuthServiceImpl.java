@@ -3,9 +3,7 @@ package com.apps.biteandsip.service.impl;
 import com.apps.biteandsip.dao.AuthorityRepository;
 import com.apps.biteandsip.dao.MenuRepository;
 import com.apps.biteandsip.dao.UserRepository;
-import com.apps.biteandsip.dto.LoginRequestDTO;
-import com.apps.biteandsip.dto.RegisterRequestDTO;
-import com.apps.biteandsip.dto.ResponseMessage;
+import com.apps.biteandsip.dto.*;
 import com.apps.biteandsip.exceptions.DuplicateUsernameException;
 import com.apps.biteandsip.exceptions.RoleNotFoundException;
 import com.apps.biteandsip.model.Authority;
@@ -16,6 +14,7 @@ import com.apps.biteandsip.service.AuthService;
 import com.apps.biteandsip.service.EmailService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -39,9 +38,10 @@ public class AuthServiceImpl implements AuthService {
     private final AuthorityRepository authorityRepository;
     private final EmailService emailService;
     private final MenuRepository menuRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
-    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, MenuRepository menuRepository){
+    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, MenuRepository menuRepository, JdbcTemplate jdbcTemplate){
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
@@ -50,6 +50,7 @@ public class AuthServiceImpl implements AuthService {
         this.authorityRepository = authorityRepository;
         this.emailService = emailService;
         this.menuRepository = menuRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
@@ -67,14 +68,16 @@ public class AuthServiceImpl implements AuthService {
         user.setAccountNonLocked(true);
         user.setCredentialsNonExpired(true);
         user.setEnabled(true);
+        user.setUserType(user.getUserType() == null || user.getUserType().equalsIgnoreCase("ADMIN") ?
+                "CUSTOMER" : user.getUserType());
 
-        Authority authority = authorityRepository.findByAuthority("ROLE_ADMIN")
+        Authority authority = authorityRepository.findByAuthority("ROLE_"+user.getUserType())
                 .orElseThrow(() -> new RoleNotFoundException("Role was not found!"));
 
         user.setAuthorities(Set.of(authority));
         User savedUser = userRepository.save(user);
 
-        emailService.sendSimpleMessage("hamza.hamdan@hotmail.com", "hello", "test123");
+        emailService.sendSimpleMessage(user.getUsername(), "verification email", "link");
 
         return new ResponseMessage(savedUser, 201);
     }
@@ -142,5 +145,93 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ResponseMessage updateUser(Map<String, Object> userArgs) {
         return null;
+    }
+
+
+    @Override
+    public ResponseMessage createEmployee(RegisterRequestDTO registerRequestDTO) {
+        if(userRepository.findByUsername(registerRequestDTO.getUsername()).isPresent()){
+            throw new DuplicateUsernameException("Username already exists in the system");
+        }
+
+        User user = new User();
+        user.setUsername(registerRequestDTO.getUsername());
+        user.setPassword(passwordEncoder.encode(registerRequestDTO.getPassword()));
+        user.setFirstName(registerRequestDTO.getFirstName());
+        user.setLastName(registerRequestDTO.getLastName());
+        user.setUserCreationDate(LocalDateTime.now());
+        user.setLastUpdateDate(LocalDateTime.now());
+        user.setAccountNonExpired(true);
+        user.setAccountNonLocked(true);
+        user.setCredentialsNonExpired(true);
+        user.setEnabled(true);
+
+        Authority authority = authorityRepository.findById(registerRequestDTO.getUserType())
+                        .orElseThrow(() -> new RoleNotFoundException("Role was not found!"));
+
+        user.setUserType(authority.getAuthority().substring(5));
+
+        user.setAuthorities(Set.of(authority));
+        User savedUser = userRepository.save(user);
+
+        emailService.sendSimpleMessage(user.getUsername(), "verification email", "link");
+
+        return new ResponseMessage(savedUser, 201);
+    }
+
+    @Override
+    public ResponseMessage getEmployeeById(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("user was not found"));
+
+        if(user.getUserType().equalsIgnoreCase("CUSTOMER")){
+            throw new UsernameNotFoundException("user was not found");
+        }
+
+        List<Authority> authorities = authorityRepository.findAll().stream()
+                .filter(item -> !item.getAuthority().equalsIgnoreCase("ROLE_CUSTOMER") && !item.getAuthority().equalsIgnoreCase("ROLE_ADMIN")).toList();
+
+        EmployeeDTO employeeDTO = new EmployeeDTO();
+        employeeDTO.setId(user.getId());
+        employeeDTO.setUsername(user.getUsername());
+        employeeDTO.setFirstName(user.getFirstName());
+        employeeDTO.setLastName(user.getLastName());
+        employeeDTO.setRoleId(((Authority) user.getAuthorities().stream().toList().get(0)).getId());
+        employeeDTO.setRoles(authorities);
+        employeeDTO.setUserType(user.getUserType());
+
+        return new ResponseMessage(employeeDTO, 200);
+    }
+
+    @Override
+    public ResponseMessage updateEmployee(Long id, EmployeeDTO employeeDTO) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("user was not found"));
+
+        user.setUsername(employeeDTO.getUsername());
+        user.setFirstName(employeeDTO.getFirstName());
+        user.setLastName(employeeDTO.getLastName());
+        user.setAuthorities(Set.of(authorityRepository.findById(employeeDTO.getRoleId()).get()));
+
+        System.out.println(user);
+
+        String sql1 = """
+           UPDATE users SET username = ?, first_name = ?, last_name = ?, user_type = ? WHERE id = ?;
+           """;
+
+        jdbcTemplate.update(sql1, user.getUsername(),
+                user.getFirstName(),
+                user.getLastName(),
+                authorityRepository.findById(employeeDTO.getRoleId()).get().getAuthority().substring(5),
+                user.getId());
+
+        String sql2 = "UPDATE user_authorities SET authority_id = ? WHERE user_id = ?;";
+
+        jdbcTemplate.update(sql2,
+                authorityRepository.findById(employeeDTO.getRoleId()).get().getId(),
+                user.getId());
+
+        return new ResponseMessage("User updated successfully", 200);
     }
 }
