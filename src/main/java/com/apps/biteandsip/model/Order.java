@@ -25,7 +25,7 @@ public class Order implements Serializable {
     private OrderStatus status;
     private String paymentId;
     private LocalDateTime creationDate;
-    private LocalDateTime lastUpdateUpdate;
+    private LocalDateTime lastUpdateDate;
 
     private BigDecimal tax;
     private BigDecimal deliveryFee;
@@ -87,12 +87,12 @@ public class Order implements Serializable {
         this.creationDate = creationDate;
     }
 
-    public LocalDateTime getLastUpdateUpdate() {
-        return lastUpdateUpdate;
+    public LocalDateTime getLastUpdateDate() {
+        return lastUpdateDate;
     }
 
-    public void setLastUpdateUpdate(LocalDateTime lastUpdateUpdate) {
-        this.lastUpdateUpdate = lastUpdateUpdate;
+    public void setLastUpdateDate(LocalDateTime lastUpdateDate) {
+        this.lastUpdateDate = lastUpdateDate;
     }
 
     public Set<OrderItem> getItems() {

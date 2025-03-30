@@ -405,7 +405,7 @@ public class AppServiceImpl implements AppService {
         Order order = new Order();
         order.setCustomer(user);
         order.setCreationDate(LocalDateTime.now());
-        order.setLastUpdateUpdate(LocalDateTime.now());
+        order.setLastUpdateDate(LocalDateTime.now());
         order.setStatus(OrderStatus.RECEIVED);
 
         Set<OrderItem> orderItems = new HashSet<>();
@@ -421,7 +421,7 @@ public class AppServiceImpl implements AppService {
             orderItem.setTotalPricePerItem(BigDecimal.valueOf(foodItem.getPrice()).multiply(BigDecimal.valueOf(cartItemDTO.getQuantity())));
             orderItems.add(orderItem);
             orderItem.setOrder(order);
-            totalAmount.add(BigDecimal.valueOf(foodItem.getPrice()).multiply(BigDecimal.valueOf(cartItemDTO.getQuantity())));
+            totalAmount = totalAmount.add(BigDecimal.valueOf(foodItem.getPrice()).multiply(BigDecimal.valueOf(cartItemDTO.getQuantity())));
         }
 
         order.setTotalPrice(totalAmount);
