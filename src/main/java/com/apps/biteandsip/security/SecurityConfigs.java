@@ -71,6 +71,7 @@ public class SecurityConfigs {
                 .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/public/**", "/h2-console/**", "/favicon.ico").permitAll())
                 .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/admin/**").hasRole("ADMIN"))
                 .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/checkout/**", "/api/v1/app/customer/**").hasRole("CUSTOMER"))
+                .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/users/profile/**").hasAnyRole("CUSTOMER", "ADMIN", "KITCHEN", "WAITER"))
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling((exception) -> exception.authenticationEntryPoint(authenticationEntryPoint))

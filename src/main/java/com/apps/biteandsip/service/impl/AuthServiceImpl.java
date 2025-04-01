@@ -7,11 +7,13 @@ import com.apps.biteandsip.dto.*;
 import com.apps.biteandsip.exceptions.DuplicateUsernameException;
 import com.apps.biteandsip.exceptions.RoleNotFoundException;
 import com.apps.biteandsip.model.Authority;
+import com.apps.biteandsip.model.FoodCategory;
 import com.apps.biteandsip.model.Menu;
 import com.apps.biteandsip.model.User;
 import com.apps.biteandsip.security.JwtUtils;
 import com.apps.biteandsip.service.AuthService;
 import com.apps.biteandsip.service.EmailService;
+import com.apps.biteandsip.service.StorageService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -24,6 +26,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -39,9 +42,11 @@ public class AuthServiceImpl implements AuthService {
     private final EmailService emailService;
     private final MenuRepository menuRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final StorageService storageService;
+
 
     @Autowired
-    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, MenuRepository menuRepository, JdbcTemplate jdbcTemplate){
+    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, MenuRepository menuRepository, JdbcTemplate jdbcTemplate, StorageService storageService){
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
@@ -51,6 +56,7 @@ public class AuthServiceImpl implements AuthService {
         this.emailService = emailService;
         this.menuRepository = menuRepository;
         this.jdbcTemplate = jdbcTemplate;
+        this.storageService = storageService;
     }
 
     @Override
@@ -214,8 +220,6 @@ public class AuthServiceImpl implements AuthService {
         user.setLastName(employeeDTO.getLastName());
         user.setAuthorities(Set.of(authorityRepository.findById(employeeDTO.getRoleId()).get()));
 
-        System.out.println(user);
-
         String sql1 = """
            UPDATE users SET username = ?, first_name = ?, last_name = ?, user_type = ? WHERE id = ?;
            """;
@@ -233,5 +237,67 @@ public class AuthServiceImpl implements AuthService {
                 user.getId());
 
         return new ResponseMessage("User updated successfully", 200);
+    }
+
+    @Override
+    public ResponseMessage forgotPassword(String username) {
+        emailService.sendSimpleMessage(username, "reset password email", "reset password link");
+        return new ResponseMessage("Check you inbox for a reset password email", 200);
+    }
+
+    @Override
+    public ResponseMessage getUserProfile(Long id) {
+        ProfileResponseDTO profileResponseDTO = new ProfileResponseDTO();
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("username was not found"));
+        Map<String, String> response = new HashMap<>();
+        response.put("username", user.getUsername());
+        response.put("firstName", user.getFirstName());
+        response.put("lastName", user.getLastName());
+        response.put("phoneNumber", user.getPhoneNumber());
+
+        if(user.getImageSource() != null){
+            response.put("imageSource", "http://localhost:8080/api/v1/app/public/image-download/" + user.getImageSource());
+        } else {
+            response.put("imageSource", "");
+        }
+
+
+        return new ResponseMessage(response, 200);
+    }
+
+    @Override
+    public ResponseMessage updateUserProfile(Long id,
+                                             String username,
+                                             String firstName,
+                                             String lastName,
+                                             String password,
+                                             String phoneNumber,
+                                             boolean fileRemoved,
+                                             MultipartFile file) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("username was not found"));
+
+        if(file != null){
+            String fileName = storageService.store(file);
+            user.setImageSource(fileName);
+        }
+
+        if(fileRemoved){
+            user.setImageSource(null);
+        }
+
+        if(!password.isEmpty()){
+            user.setPassword(passwordEncoder.encode(password));
+        }
+
+        user.setUsername(username);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setPhoneNumber(phoneNumber);
+
+        userRepository.save(user);
+
+        return new ResponseMessage("user updated successfully", 200);
     }
 }

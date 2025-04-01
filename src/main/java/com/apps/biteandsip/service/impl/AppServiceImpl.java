@@ -261,10 +261,6 @@ public class AppServiceImpl implements AppService {
                         .build();
         PaymentIntent paymentIntent = PaymentIntent.create(params);
 
-        System.out.println(paymentIntent.getClientSecret());
-        System.out.println(paymentIntent.getStatus());
-        System.out.println(paymentIntent.getId());
-
         Map<String, String> paymentIntentDetails = new HashMap<>();
         paymentIntentDetails.put("clientSecret", paymentIntent.getClientSecret());
         paymentIntentDetails.put("paymentId", paymentIntent.getId());
@@ -288,7 +284,6 @@ public class AppServiceImpl implements AppService {
                         .build();
         try {
             PaymentIntent paymentIntent = resource.confirm(params);
-            System.out.println(paymentIntent.getStatus());
             return new ResponseMessage(paymentIntent.getStatus(), 200);
         } catch (StripeException e) {
             throw new RuntimeException(e);
@@ -366,7 +361,6 @@ public class AppServiceImpl implements AppService {
 
     @Override
     public ResponseMessage getCouponByCode(String code) {
-        System.out.println(code);
         Coupon coupon = null;
         if(!couponRepository.findByCode(code).isEmpty()){
             coupon = couponRepository.findByCode(code).get(0);

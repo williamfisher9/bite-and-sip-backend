@@ -6,6 +6,7 @@ import com.apps.biteandsip.dto.RegisterRequestDTO;
 import com.apps.biteandsip.dto.ResponseMessage;
 import com.apps.biteandsip.model.User;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -23,4 +24,16 @@ public interface AuthService {
     ResponseMessage createEmployee(RegisterRequestDTO registerRequestDTO);
     ResponseMessage getEmployeeById(Long id);
     ResponseMessage updateEmployee(Long id, EmployeeDTO employeeDTO);
+
+    ResponseMessage forgotPassword(String username);
+    ResponseMessage getUserProfile(Long id);
+
+    ResponseMessage updateUserProfile(Long id,
+                                      String username,
+                                      String firstName,
+                                      String lastName,
+                                      String password,
+                                      String phoneNumber,
+                                      boolean fileRemoved,
+                                      MultipartFile file);
 }

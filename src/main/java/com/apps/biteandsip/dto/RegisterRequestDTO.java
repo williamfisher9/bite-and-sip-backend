@@ -10,13 +10,15 @@ public class RegisterRequestDTO {
     @NotBlank(message="Password should not be empty") private String password;
     @NotBlank(message="First name should not be empty") private String firstName;
     @NotBlank(message="Last name should not be empty") private String lastName;
+    @NotBlank(message="Phone number should not be empty") private String phoneNumber;
     private Long userType;
 
-    public RegisterRequestDTO(String username, String password, String firstName, String lastName) {
+    public RegisterRequestDTO(String username, String password, String firstName, String lastName, String phoneNumber) {
         this.username = username;
         this.password = password;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.phoneNumber = phoneNumber;
     }
 
     public String getUsername() {
@@ -57,5 +59,13 @@ public class RegisterRequestDTO {
 
     public void setUserType(Long userType) {
         this.userType = userType;
+    }
+
+    public @NotBlank(message = "Phone number should not be empty") String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(@NotBlank(message = "Phone number should not be empty") String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }

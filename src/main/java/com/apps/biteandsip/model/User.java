@@ -1,7 +1,6 @@
 package com.apps.biteandsip.model;
 
 import jakarta.persistence.*;
-import org.hibernate.validator.constraints.Length;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -31,6 +30,8 @@ public class User implements Serializable, UserDetails {
     private boolean isAccountNonLocked;
     private boolean isCredentialsNonExpired;
 
+    private String imageSource;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_authorities",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
@@ -40,15 +41,18 @@ public class User implements Serializable, UserDetails {
     private LocalDateTime userCreationDate;
     private LocalDateTime lastUpdateDate;
 
+    private String phoneNumber;
+
     public User() {
     }
 
-    public User(String username, String firstName, String lastName, String password, String userType) {
+    public User(String username, String firstName, String lastName, String password, String userType, String phoneNumber) {
         this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
         this.password = password;
         this.userType = userType;
+        this.phoneNumber = phoneNumber;
     }
 
     public Long getId() {
@@ -160,17 +164,33 @@ public class User implements Serializable, UserDetails {
         this.authorities = authorities;
     }
 
+    public String getImageSource() {
+        return imageSource;
+    }
+
+    public void setImageSource(String imageSource) {
+        this.imageSource = imageSource;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return isEnabled == user.isEnabled && isAccountNonExpired == user.isAccountNonExpired && isAccountNonLocked == user.isAccountNonLocked && isCredentialsNonExpired == user.isCredentialsNonExpired && Objects.equals(id, user.id) && Objects.equals(username, user.username) && Objects.equals(firstName, user.firstName) && Objects.equals(lastName, user.lastName) && Objects.equals(password, user.password) && Objects.equals(userType, user.userType) && Objects.equals(authorities, user.authorities) && Objects.equals(userCreationDate, user.userCreationDate) && Objects.equals(lastUpdateDate, user.lastUpdateDate);
+        return isEnabled == user.isEnabled && isAccountNonExpired == user.isAccountNonExpired && isAccountNonLocked == user.isAccountNonLocked && isCredentialsNonExpired == user.isCredentialsNonExpired && Objects.equals(id, user.id) && Objects.equals(username, user.username) && Objects.equals(firstName, user.firstName) && Objects.equals(lastName, user.lastName) && Objects.equals(password, user.password) && Objects.equals(userType, user.userType) && Objects.equals(imageSource, user.imageSource) && Objects.equals(authorities, user.authorities) && Objects.equals(userCreationDate, user.userCreationDate) && Objects.equals(lastUpdateDate, user.lastUpdateDate) && Objects.equals(phoneNumber, user.phoneNumber);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, username, firstName, lastName, password, userType, isEnabled, isAccountNonExpired, isAccountNonLocked, isCredentialsNonExpired, authorities, userCreationDate, lastUpdateDate);
+        return Objects.hash(id, username, firstName, lastName, password, userType, isEnabled, isAccountNonExpired, isAccountNonLocked, isCredentialsNonExpired, imageSource, authorities, userCreationDate, lastUpdateDate, phoneNumber);
     }
 
     @Override
@@ -186,9 +206,11 @@ public class User implements Serializable, UserDetails {
                 ", isAccountNonExpired=" + isAccountNonExpired +
                 ", isAccountNonLocked=" + isAccountNonLocked +
                 ", isCredentialsNonExpired=" + isCredentialsNonExpired +
+                ", imageSource='" + imageSource + '\'' +
                 ", authorities=" + authorities +
                 ", userCreationDate=" + userCreationDate +
                 ", lastUpdateDate=" + lastUpdateDate +
+                ", phoneNumber='" + phoneNumber + '\'' +
                 '}';
     }
 }
