@@ -88,10 +88,16 @@ public class UserController {
                                                              @RequestParam("lastName") String lastName,
                                                              @RequestParam("password") String password,
                                                              @RequestParam("phoneNumber") String phoneNumber,
-                                                             @RequestParam("fileRemoved") boolean fileRemoved,
+                                                             @RequestParam("imageSource") String imageSource,
                                                              @RequestPart(value = "file", required = false) MultipartFile file){
 
-        ResponseMessage responseMessage = authService.updateUserProfile(Long.valueOf(userId), username, firstName, lastName, password, phoneNumber, fileRemoved, file);
+        ResponseMessage responseMessage = authService.updateUserProfile(Long.valueOf(userId), username, firstName, lastName, password, phoneNumber, imageSource, file);
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/customers/{id}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> getCustomerById(@PathVariable("id") Long id){
+        ResponseMessage responseMessage = authService.getCustomerById(id);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 }

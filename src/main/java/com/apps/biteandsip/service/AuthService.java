@@ -34,6 +34,8 @@ public interface AuthService {
                                       String lastName,
                                       String password,
                                       String phoneNumber,
-                                      boolean fileRemoved,
+                                      String imageSource,
                                       MultipartFile file);
+
+    ResponseMessage getCustomerById(Long id);
 }

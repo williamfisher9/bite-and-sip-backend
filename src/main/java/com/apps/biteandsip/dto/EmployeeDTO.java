@@ -10,18 +10,21 @@ public class EmployeeDTO {
     private String firstName;
     private String lastName;
     private String userType;
+    private String phoneNumber;
     private Long roleId;
+    private boolean active;
     private List<Authority> roles;
 
     public EmployeeDTO() {
     }
 
-    public EmployeeDTO(Long id, String username, String firstName, String lastName, String userType, Long roleId, List<Authority> roles) {
+    public EmployeeDTO(Long id, String username, String firstName, String lastName, String userType, String phoneNumber, Long roleId, List<Authority> roles) {
         this.id = id;
         this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
         this.userType = userType;
+        this.phoneNumber = phoneNumber;
         this.roleId = roleId;
         this.roles = roles;
     }
@@ -80,5 +83,21 @@ public class EmployeeDTO {
 
     public void setRoles(List<Authority> roles) {
         this.roles = roles;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

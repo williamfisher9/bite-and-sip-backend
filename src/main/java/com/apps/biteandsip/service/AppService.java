@@ -45,4 +45,8 @@ public interface AppService {
     ResponseMessage confirmOrder(Map<String, Object> items);
     ResponseMessage getCustomerOrders(Long customerId);
     ResponseMessage getAdminOrders();
+
+    ResponseMessage getAdminFoodItems();
+
+    ResponseMessage getAdminDashboard();
 }

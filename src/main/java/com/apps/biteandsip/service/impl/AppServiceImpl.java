@@ -8,9 +8,6 @@ import com.apps.biteandsip.exceptions.FoodItemNotFoundException;
 import com.apps.biteandsip.model.*;
 import com.apps.biteandsip.service.AppService;
 import com.apps.biteandsip.service.StorageService;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -19,21 +16,16 @@ import com.stripe.param.PaymentIntentCreateParams;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.awt.print.Book;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class AppServiceImpl implements AppService {
@@ -173,7 +165,32 @@ public class AppServiceImpl implements AppService {
 
     @Override
     public ResponseMessage getFoodItems() {
+        List<FoodCategory> categories = foodCategoryRepository.findAll().stream()
+                .filter(FoodCategory::isActive)
+                .toList();
+
+        List<FoodItem> foodItems = foodItemRepository.findAll()
+                .stream().filter(item -> item.isActive() && item.getCategory().isActive())
+                .toList();
+
+        for(FoodCategory category: categories){
+            category.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + category.getImageSource());
+        }
+
+        for(FoodItem foodItem: foodItems){
+            foodItem.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + foodItem.getImageSource());
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("categories", categories);
+        response.put("foodItems", foodItems);
+        return new ResponseMessage(response, 200);
+    }
+
+    @Override
+    public ResponseMessage getAdminFoodItems() {
         List<FoodCategory> categories = foodCategoryRepository.findAll();
+
         List<FoodItem> foodItems = foodItemRepository.findAll();
 
         for(FoodCategory category: categories){
@@ -189,6 +206,8 @@ public class AppServiceImpl implements AppService {
         response.put("foodItems", foodItems);
         return new ResponseMessage(response, 200);
     }
+
+
 
     @Override
     public ResponseMessage getFoodItemById(Long id) {
@@ -207,13 +226,17 @@ public class AppServiceImpl implements AppService {
     public ResponseMessage getFoodItemsByCategoryId(Long id) {
         List<FoodItem> foodItems;
         if(id == 0){
-            foodItems = foodItemRepository.findAll();
+            foodItems = foodItemRepository.findAll()
+                    .stream().filter(item -> item.isActive() && item.getCategory().isActive())
+                    .toList();
 
             for(FoodItem foodItem: foodItems){
                 foodItem.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + foodItem.getImageSource());
             }
         } else {
-            foodItems = foodItemRepository.findByCategoryId(id);
+            foodItems = foodItemRepository.findByCategoryId(id)
+                    .stream().filter(item -> item.isActive() && item.getCategory().isActive())
+                    .toList();
 
             for(FoodItem foodItem: foodItems){
                 foodItem.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + foodItem.getImageSource());
@@ -457,6 +480,29 @@ public class AppServiceImpl implements AppService {
 
     @Override
     public ResponseMessage getAdminOrders() {
-        return new ResponseMessage(orderRepository.findAll(), 200);
+        List<Order> orders = orderRepository.findAll();
+
+        for(Order order : orders){
+            for(OrderItem orderItem : order.getItems()){
+                orderItem.getItem().setImageSource(
+                        orderItem.getItem().getImageSource().startsWith("http") ?
+                                orderItem.getItem().getImageSource() :
+                                "http://localhost:8080/api/v1/app/public/image-download/" + orderItem.getItem().getImageSource()
+                );
+            }
+        }
+
+        return new ResponseMessage(orders, 200);
+    }
+
+    @Override
+    public ResponseMessage getAdminDashboard() {
+        Map<String, Object> result = new HashMap<>();
+        // pending items for the date
+
+        // handled items for the date
+
+
+        return new ResponseMessage("success", 200);
     }
 }

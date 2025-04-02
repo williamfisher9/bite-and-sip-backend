@@ -126,7 +126,7 @@ public class AppController {
 
     @RequestMapping(value = "/admin/food-items", method = RequestMethod.GET)
     public ResponseEntity<ResponseMessage> adminFoodItems(){
-        ResponseMessage responseMessage = appService.getFoodItems();
+        ResponseMessage responseMessage = appService.getAdminFoodItems();
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
@@ -149,7 +149,7 @@ public class AppController {
         if(!values.get("val").equalsIgnoreCase("-")){
             responseMessage = appService.searchFoodItems(values.get("val"));
         } else {
-            responseMessage = appService.getFoodItems();
+            responseMessage = appService.getAdminFoodItems();
         }
 
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
@@ -274,6 +274,12 @@ public class AppController {
     @RequestMapping(value = "/admin/orders", method = RequestMethod.GET)
     public ResponseEntity<ResponseMessage> customerGetOrders(){
         ResponseMessage responseMessage = appService.getAdminOrders();
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/dashboard", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> getAdminDashboard(){
+        ResponseMessage responseMessage = appService.getAdminDashboard();
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 }

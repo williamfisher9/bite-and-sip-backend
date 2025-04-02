@@ -2,14 +2,12 @@ package com.apps.biteandsip.service.impl;
 
 import com.apps.biteandsip.dao.AuthorityRepository;
 import com.apps.biteandsip.dao.MenuRepository;
+import com.apps.biteandsip.dao.OrderRepository;
 import com.apps.biteandsip.dao.UserRepository;
 import com.apps.biteandsip.dto.*;
 import com.apps.biteandsip.exceptions.DuplicateUsernameException;
 import com.apps.biteandsip.exceptions.RoleNotFoundException;
-import com.apps.biteandsip.model.Authority;
-import com.apps.biteandsip.model.FoodCategory;
-import com.apps.biteandsip.model.Menu;
-import com.apps.biteandsip.model.User;
+import com.apps.biteandsip.model.*;
 import com.apps.biteandsip.security.JwtUtils;
 import com.apps.biteandsip.service.AuthService;
 import com.apps.biteandsip.service.EmailService;
@@ -43,10 +41,11 @@ public class AuthServiceImpl implements AuthService {
     private final MenuRepository menuRepository;
     private final JdbcTemplate jdbcTemplate;
     private final StorageService storageService;
+    private final OrderRepository orderRepository;
 
 
     @Autowired
-    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, MenuRepository menuRepository, JdbcTemplate jdbcTemplate, StorageService storageService){
+    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, MenuRepository menuRepository, JdbcTemplate jdbcTemplate, StorageService storageService, OrderRepository orderRepository){
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
@@ -57,6 +56,7 @@ public class AuthServiceImpl implements AuthService {
         this.menuRepository = menuRepository;
         this.jdbcTemplate = jdbcTemplate;
         this.storageService = storageService;
+        this.orderRepository = orderRepository;
     }
 
     @Override
@@ -165,6 +165,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(registerRequestDTO.getPassword()));
         user.setFirstName(registerRequestDTO.getFirstName());
         user.setLastName(registerRequestDTO.getLastName());
+        user.setPhoneNumber(registerRequestDTO.getPhoneNumber());
         user.setUserCreationDate(LocalDateTime.now());
         user.setLastUpdateDate(LocalDateTime.now());
         user.setAccountNonExpired(true);
@@ -201,8 +202,10 @@ public class AuthServiceImpl implements AuthService {
         EmployeeDTO employeeDTO = new EmployeeDTO();
         employeeDTO.setId(user.getId());
         employeeDTO.setUsername(user.getUsername());
+        employeeDTO.setActive(user.isEnabled());
         employeeDTO.setFirstName(user.getFirstName());
         employeeDTO.setLastName(user.getLastName());
+        employeeDTO.setPhoneNumber(user.getPhoneNumber());
         employeeDTO.setRoleId(((Authority) user.getAuthorities().stream().toList().get(0)).getId());
         employeeDTO.setRoles(authorities);
         employeeDTO.setUserType(user.getUserType());
@@ -218,16 +221,20 @@ public class AuthServiceImpl implements AuthService {
         user.setUsername(employeeDTO.getUsername());
         user.setFirstName(employeeDTO.getFirstName());
         user.setLastName(employeeDTO.getLastName());
+        user.setPhoneNumber(employeeDTO.getPhoneNumber());
         user.setAuthorities(Set.of(authorityRepository.findById(employeeDTO.getRoleId()).get()));
+        user.setEnabled(employeeDTO.isActive());
 
         String sql1 = """
-           UPDATE users SET username = ?, first_name = ?, last_name = ?, user_type = ? WHERE id = ?;
+           UPDATE users SET username = ?, first_name = ?, last_name = ?, user_type = ?, phone_number = ?, is_enabled = ? WHERE id = ?;
            """;
 
         jdbcTemplate.update(sql1, user.getUsername(),
                 user.getFirstName(),
                 user.getLastName(),
                 authorityRepository.findById(employeeDTO.getRoleId()).get().getAuthority().substring(5),
+                user.getPhoneNumber(),
+                user.isEnabled(),
                 user.getId());
 
         String sql2 = "UPDATE user_authorities SET authority_id = ? WHERE user_id = ?;";
@@ -273,7 +280,7 @@ public class AuthServiceImpl implements AuthService {
                                              String lastName,
                                              String password,
                                              String phoneNumber,
-                                             boolean fileRemoved,
+                                             String imageSource,
                                              MultipartFile file) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UsernameNotFoundException("username was not found"));
@@ -283,7 +290,7 @@ public class AuthServiceImpl implements AuthService {
             user.setImageSource(fileName);
         }
 
-        if(fileRemoved){
+        if(imageSource.isEmpty() && file == null){
             user.setImageSource(null);
         }
 
@@ -299,5 +306,45 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         return new ResponseMessage("user updated successfully", 200);
+    }
+
+    @Override
+    public ResponseMessage getCustomerById(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("user was not found"));
+
+        if(!user.getUserType().equalsIgnoreCase("CUSTOMER")){
+            throw new UsernameNotFoundException("user was not found");
+        }
+
+        List<Order> orders = orderRepository.findByCustomerId(id);
+
+        CustomerResponseDTO responseDTO = new CustomerResponseDTO();
+        responseDTO.setUsername(user.getUsername());
+        responseDTO.setFirstName(user.getFirstName());
+        responseDTO.setLastName(user.getLastName());
+
+        for(Order order : orders){
+            for(OrderItem orderItem : order.getItems()){
+                orderItem.getItem().setImageSource(
+                        orderItem.getItem().getImageSource().startsWith("http") ?
+                                orderItem.getItem().getImageSource() :
+                                "http://localhost:8080/api/v1/app/public/image-download/" + orderItem.getItem().getImageSource()
+                );
+            }
+        }
+
+        responseDTO.setOrders(orders);
+
+        if(user.getImageSource() != null){
+            responseDTO.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + user.getImageSource());
+        } else {
+            responseDTO.setImageSource("");
+        }
+        
+        responseDTO.setPhoneNumber(user.getPhoneNumber());
+
+        return new ResponseMessage(responseDTO, 200);
     }
 }
