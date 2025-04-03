@@ -38,14 +38,13 @@ public class AuthServiceImpl implements AuthService {
     private final ModelMapper modelMapper;
     private final AuthorityRepository authorityRepository;
     private final EmailService emailService;
-    private final MenuRepository menuRepository;
     private final JdbcTemplate jdbcTemplate;
     private final StorageService storageService;
     private final OrderRepository orderRepository;
 
 
     @Autowired
-    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, MenuRepository menuRepository, JdbcTemplate jdbcTemplate, StorageService storageService, OrderRepository orderRepository){
+    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, JdbcTemplate jdbcTemplate, StorageService storageService, OrderRepository orderRepository){
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
@@ -53,7 +52,6 @@ public class AuthServiceImpl implements AuthService {
         this.modelMapper = modelMapper;
         this.authorityRepository = authorityRepository;
         this.emailService = emailService;
-        this.menuRepository = menuRepository;
         this.jdbcTemplate = jdbcTemplate;
         this.storageService = storageService;
         this.orderRepository = orderRepository;
@@ -104,6 +102,12 @@ public class AuthServiceImpl implements AuthService {
             response.put("authorityId", String.valueOf(((User) authentication.getPrincipal()).getAuthorities().stream().map((item) -> ((Authority) item).getId()).toList().get(0)));
             response.put("targetUrl", generateTargetUrlFromAuthority(authentication));
             response.put("menuItems", getUserMenuItems(authentication));
+
+            if(String.valueOf(((User) authentication.getPrincipal()).getId()).equalsIgnoreCase("1"))
+                response.put("homePageUrl", "/biteandsip/admin/dashboard");
+            else
+                response.put("homePageUrl", "/biteandsip/home");
+
             return new ResponseMessage(response, 200);
         } catch(AuthenticationException exc){
             return new ResponseMessage(exc.getMessage(), 404);

@@ -376,7 +376,9 @@ public class AppServiceImpl implements AppService {
         if(userType.equalsIgnoreCase("customers")){
             users = userRepository.findByUserType("CUSTOMER");
         } else if(userType.equalsIgnoreCase("employees")) {
-            users = userRepository.findByUserTypeNot("CUSTOMER");
+            users = userRepository.findByUserTypeNot("CUSTOMER").stream()
+                    .filter(record -> !record.getUserType().equalsIgnoreCase("ADMIN"))
+                    .toList();
         }
         
         return new ResponseMessage(users, 200);
@@ -475,7 +477,22 @@ public class AppServiceImpl implements AppService {
 
     @Override
     public ResponseMessage getCustomerOrders(Long customerId) {
-        return new ResponseMessage(orderRepository.findByCustomerId(customerId), 200);
+        User user = userRepository.findById(customerId)
+                .orElseThrow(() -> new UsernameNotFoundException("username was not found"));
+
+        List<Order> orders = orderRepository.findByCustomerId(customerId);
+
+        for(Order order : orders){
+            for(OrderItem orderItem : order.getItems()){
+                orderItem.getItem().setImageSource(
+                        orderItem.getItem().getImageSource().startsWith("http") ?
+                                orderItem.getItem().getImageSource() :
+                                "http://localhost:8080/api/v1/app/public/image-download/" + orderItem.getItem().getImageSource()
+                );
+            }
+        }
+
+        return new ResponseMessage(orders, 200);
     }
 
     @Override
