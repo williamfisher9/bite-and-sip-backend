@@ -35,7 +35,7 @@ jobs:
             exit 1
           fi
       - name: Pull image from docker hub
-        run: sudo docker pull <dockerhub repository name>:latest
+        run: sudo docker pull willfisherapps/springbootapps:latest
       - name: Delete existing container
         run: |
           if [ "$(sudo docker ps -aq -f name=demo)" ]; then
