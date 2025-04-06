@@ -4,6 +4,12 @@ on:
   push:
     branches: [ "master" ]
 
+env:
+  SPRING_MAIL_USERNAME: '${{ secrets.SPRING_MAIL_USERNAME }}'
+  SPRING_MAIL_PASSWORD: '${{ secrets.SPRING_MAIL_PASSWORD }}'
+  STRIPE_API_KEY: '${{ secrets.STRIPE_API_KEY }}'
+  JWT_SECRET_KEY: '${{ secrets.JWT_SECRET_KEY }}'
+
 jobs:
   build:
     runs-on: ubuntu-latest
