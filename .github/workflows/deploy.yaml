@@ -42,4 +42,4 @@ jobs:
             sudo docker rm -f demo
           fi
       - name: Run docker-compose
-        run: cd ~/docker && sudo docker-compose up
+        run: sudo docker-compose -f docker-compose.yml -d up
