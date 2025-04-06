@@ -20,9 +20,9 @@ jobs:
       - name: Login to docker hub
         run: docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
       - name: Build docker image
-        run: docker build -f ./Dockerfile -t willfisherapps/springbootapps .
+        run: docker build -f ./Dockerfile -t willfisherapps/biteandsip-app .
       - name: Push docker image
-        run: docker push willfisherapps/springbootapps:latest
+        run: docker push willfisherapps/biteandsip-app:latest
 
   deploy:
     needs: build
@@ -35,11 +35,11 @@ jobs:
             exit 1
           fi
       - name: Pull image from docker hub
-        run: sudo docker pull willfisherapps/springbootapps:latest
+        run: sudo docker pull willfisherapps/biteandsip-app:latest
       - name: Delete existing container
         run: |
           if [ "$(sudo docker ps -aq -f name=demo)" ]; then
             sudo docker rm -f demo
           fi
-      - name: Run docker container
-        run: sudo docker run -d -p 8080:8080 --name biteandsipbackend willfisherapps/springbootapps
+      - name: Run docker-compose
+        run: sudo docker-compose up
