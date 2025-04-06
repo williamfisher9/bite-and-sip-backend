@@ -38,13 +38,18 @@ public class AppServiceImpl implements AppService {
     private final UserRepository userRepository;
     private final AuthorityRepository authorityRepository;
     private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
 
     @Value("${stripe.api.key}")
     private String stripeApiKey;
 
+    @Value("${backend.url}")
+    private String backendUrl;
+
+    @Value("${image.download.url}")
+    private String imageDownloadUrl;
+
     @Autowired
-    public AppServiceImpl(FoodCategoryRepository foodCategoryRepository, FoodItemRepository foodItemRepository, CouponRepository couponRepository, SettingsRepository settingsRepository, ModelMapper mapper, StorageService storageService, UserRepository userRepository, AuthorityRepository authorityRepository, OrderRepository orderRepository, OrderItemRepository orderItemRepository) {
+    public AppServiceImpl(FoodCategoryRepository foodCategoryRepository, FoodItemRepository foodItemRepository, CouponRepository couponRepository, SettingsRepository settingsRepository, ModelMapper mapper, StorageService storageService, UserRepository userRepository, AuthorityRepository authorityRepository, OrderRepository orderRepository) {
         this.foodCategoryRepository = foodCategoryRepository;
         this.foodItemRepository = foodItemRepository;
         this.couponRepository = couponRepository;
@@ -54,7 +59,6 @@ public class AppServiceImpl implements AppService {
         this.userRepository = userRepository;
         this.authorityRepository = authorityRepository;
         this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
     }
 
     @Override
@@ -119,7 +123,7 @@ public class AppServiceImpl implements AppService {
     public ResponseMessage getFoodCategories() {
         List<FoodCategory> categories = foodCategoryRepository.findAll();
         for(FoodCategory foodCategory: categories){
-            foodCategory.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + foodCategory.getImageSource());
+            foodCategory.setImageSource(imageDownloadUrl + foodCategory.getImageSource());
         }
         return new ResponseMessage(categories, 200);
     }
@@ -127,7 +131,7 @@ public class AppServiceImpl implements AppService {
     @Override
     public ResponseMessage getFoodCategoryById(Long id) {
         FoodCategory foodCategory = foodCategoryRepository.findById(id).orElseThrow(() -> new FoodCategoryNotFoundException("Category was not found"));
-        foodCategory.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + foodCategory.getImageSource());
+        foodCategory.setImageSource(imageDownloadUrl + foodCategory.getImageSource());
         return new ResponseMessage(foodCategory, 200);
     }
 
@@ -141,7 +145,7 @@ public class AppServiceImpl implements AppService {
         }
 
         for(FoodCategory foodCategory: foodCategories){
-            foodCategory.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + foodCategory.getImageSource());
+            foodCategory.setImageSource(imageDownloadUrl + foodCategory.getImageSource());
         }
 
         return new ResponseMessage(foodCategories, 200);
@@ -157,7 +161,7 @@ public class AppServiceImpl implements AppService {
         }
 
         for(FoodItem foodItem: foodItems){
-            foodItem.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + foodItem.getImageSource());
+            foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
         }
 
         return new ResponseMessage(foodItems, 200);
@@ -174,11 +178,11 @@ public class AppServiceImpl implements AppService {
                 .toList();
 
         for(FoodCategory category: categories){
-            category.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + category.getImageSource());
+            category.setImageSource(imageDownloadUrl + category.getImageSource());
         }
 
         for(FoodItem foodItem: foodItems){
-            foodItem.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + foodItem.getImageSource());
+            foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
         }
 
         Map<String, Object> response = new HashMap<>();
@@ -194,11 +198,11 @@ public class AppServiceImpl implements AppService {
         List<FoodItem> foodItems = foodItemRepository.findAll();
 
         for(FoodCategory category: categories){
-            category.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + category.getImageSource());
+            category.setImageSource(imageDownloadUrl + category.getImageSource());
         }
 
         for(FoodItem foodItem: foodItems){
-            foodItem.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + foodItem.getImageSource());
+            foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
         }
 
         Map<String, Object> response = new HashMap<>();
@@ -214,7 +218,7 @@ public class AppServiceImpl implements AppService {
         List<FoodCategory> categories = foodCategoryRepository.findAll();
         FoodItem foodItem = foodItemRepository.findById(id).orElseThrow(() -> new FoodItemNotFoundException("Food item was not found"));
 
-        foodItem.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + foodItem.getImageSource());
+        foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
 
         Map<String, Object> response = new HashMap<>();
         response.put("categories", categories);
@@ -231,7 +235,7 @@ public class AppServiceImpl implements AppService {
                     .toList();
 
             for(FoodItem foodItem: foodItems){
-                foodItem.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + foodItem.getImageSource());
+                foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
             }
         } else {
             foodItems = foodItemRepository.findByCategoryId(id)
@@ -239,7 +243,7 @@ public class AppServiceImpl implements AppService {
                     .toList();
 
             for(FoodItem foodItem: foodItems){
-                foodItem.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + foodItem.getImageSource());
+                foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
             }
         }
 
@@ -303,7 +307,7 @@ public class AppServiceImpl implements AppService {
         PaymentIntentConfirmParams params =
                 PaymentIntentConfirmParams.builder()
                         .setPaymentMethod("pm_card_visa")
-                        .setReturnUrl("http://localhost:5173/biteandsip/cart/payment-status")
+                        .setReturnUrl(backendUrl + "/cart/payment-status")
                         .build();
         try {
             PaymentIntent paymentIntent = resource.confirm(params);
@@ -455,7 +459,7 @@ public class AppServiceImpl implements AppService {
                 .setAutomaticPaymentMethods(PaymentIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true).build())
                 .setConfirm(true)
                 .setConfirmationToken(confirmationTokenId)
-                .setReturnUrl("http://localhost:5173/biteandsip/payment-status")
+                .setReturnUrl(backendUrl + "/payment-status")
                 .build();
 
         PaymentIntent resource = null;
@@ -485,9 +489,9 @@ public class AppServiceImpl implements AppService {
         for(Order order : orders){
             for(OrderItem orderItem : order.getItems()){
                 orderItem.getItem().setImageSource(
-                        orderItem.getItem().getImageSource().startsWith("http") ?
+                        orderItem.getItem().getImageSource().startsWith("https") ?
                                 orderItem.getItem().getImageSource() :
-                                "http://localhost:8080/api/v1/app/public/image-download/" + orderItem.getItem().getImageSource()
+                                imageDownloadUrl + orderItem.getItem().getImageSource()
                 );
             }
         }
@@ -504,7 +508,7 @@ public class AppServiceImpl implements AppService {
                 orderItem.getItem().setImageSource(
                         orderItem.getItem().getImageSource().startsWith("http") ?
                                 orderItem.getItem().getImageSource() :
-                                "http://localhost:8080/api/v1/app/public/image-download/" + orderItem.getItem().getImageSource()
+                                imageDownloadUrl + orderItem.getItem().getImageSource()
                 );
             }
         }
