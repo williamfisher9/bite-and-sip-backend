@@ -47,14 +47,13 @@ public class AppConfigs {
                 menuRepository.save(new Menu("ADMINISTRATION", "FOOD ITEMS", "/biteandsip/admin/food-items"));
                 menuRepository.save(new Menu("ADMINISTRATION", "FOOD CATEGORIES", "/biteandsip/admin/food-categories"));
                 menuRepository.save(new Menu("ADMINISTRATION", "COUPONS", "/biteandsip/admin/coupons"));
-
                 menuRepository.save(new Menu("ADMINISTRATION", "EMPLOYEES", "/biteandsip/admin/employees"));
                 menuRepository.save(new Menu("ADMINISTRATION", "CUSTOMERS", "/biteandsip/admin/customers"));
                 menuRepository.save(new Menu("ADMINISTRATION", "ORDERS", "/biteandsip/admin/orders"));
 
                 //menuRepository.save(new Menu("ADMINISTRATION", "TABLES RESERVATIONS", "/biteandsip/admin/tables-reservations"));
                 menuRepository.save(new Menu("ADMINISTRATION", "SETTINGS", "/biteandsip/admin/settings"));
-                menuRepository.save(new Menu("PRIVATE", "ORDERS", "/biteandsip/orders"));
+                menuRepository.save(new Menu("PRIVATE", "MY ORDERS", "/biteandsip/orders"));
                 menuRepository.save(new Menu("PRIVATE", "PROFILE", "/biteandsip/profile"));
 
 
