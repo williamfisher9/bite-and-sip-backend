@@ -27,8 +27,6 @@ public class JwtUtils {
     private static final Logger LOG = LoggerFactory.getLogger(JwtUtils.class);
 
     private SecretKey getKey() {
-        System.out.println("---------------------------------------");
-        System.out.println(jwtSecretKey);
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecretKey));
     }
 
