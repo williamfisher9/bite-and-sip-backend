@@ -25,7 +25,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
 
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setHeader("WWW-Authenticate", "Bearer realm=http://localhost:8080/api/v1, charset=\"UTF-8\"");
+        response.setHeader("WWW-Authenticate", "Bearer realm=https://willtechbooth.dev/biteandsip/api/v1/app, charset=\"UTF-8\"");
 
         final Map<String, Object> body = new HashMap<>();
         body.put("status", HttpServletResponse.SC_UNAUTHORIZED);

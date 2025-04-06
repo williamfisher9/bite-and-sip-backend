@@ -14,6 +14,7 @@ import com.apps.biteandsip.service.EmailService;
 import com.apps.biteandsip.service.StorageService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -42,6 +43,8 @@ public class AuthServiceImpl implements AuthService {
     private final StorageService storageService;
     private final OrderRepository orderRepository;
 
+    @Value("${image.download.url}")
+    private String imageDownloadUrl;
 
     @Autowired
     public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, JdbcTemplate jdbcTemplate, StorageService storageService, OrderRepository orderRepository){
@@ -268,7 +271,7 @@ public class AuthServiceImpl implements AuthService {
         response.put("phoneNumber", user.getPhoneNumber());
 
         if(user.getImageSource() != null){
-            response.put("imageSource", "http://localhost:8080/api/v1/app/public/image-download/" + user.getImageSource());
+            response.put("imageSource", imageDownloadUrl + user.getImageSource());
         } else {
             response.put("imageSource", "");
         }
@@ -334,7 +337,7 @@ public class AuthServiceImpl implements AuthService {
                 orderItem.getItem().setImageSource(
                         orderItem.getItem().getImageSource().startsWith("http") ?
                                 orderItem.getItem().getImageSource() :
-                                "http://localhost:8080/api/v1/app/public/image-download/" + orderItem.getItem().getImageSource()
+                                imageDownloadUrl + orderItem.getItem().getImageSource()
                 );
             }
         }
@@ -342,7 +345,7 @@ public class AuthServiceImpl implements AuthService {
         responseDTO.setOrders(orders);
 
         if(user.getImageSource() != null){
-            responseDTO.setImageSource("http://localhost:8080/api/v1/app/public/image-download/" + user.getImageSource());
+            responseDTO.setImageSource(imageDownloadUrl + user.getImageSource());
         } else {
             responseDTO.setImageSource("");
         }
