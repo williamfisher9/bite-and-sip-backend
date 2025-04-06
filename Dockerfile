@@ -16,8 +16,8 @@ RUN mkdir -p /app/images
 
 WORKDIR /app
 
-COPY ${JAR_FILE} /app/biteandsip-app.jar
+COPY ${JAR_FILE} /app/biteandsip-0.0.1.jar
 
 EXPOSE 8080
 
-CMD ["java", "-jar", "/app/biteandsip-app.jar"]
+CMD ["java", "-jar", "/app/biteandsip-0.0.1.jar"]

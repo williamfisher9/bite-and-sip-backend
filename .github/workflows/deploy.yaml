@@ -26,9 +26,9 @@ jobs:
       - name: Login to docker hub
         run: docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
       - name: Build docker image
-        run: docker build -f ./Dockerfile -t willfisherapps/biteandsip-app .
+        run: docker build -f ./Dockerfile -t willfisherapps/biteandsip-0.0.1 .
       - name: Push docker image
-        run: docker push willfisherapps/biteandsip-app:latest
+        run: docker push willfisherapps/biteandsip-0.0.1:latest
 
   deploy:
     needs: build
@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
       - name: Pull image from docker hub
-        run: sudo docker pull willfisherapps/biteandsip-app:latest
+        run: sudo docker pull willfisherapps/biteandsip-0.0.1:latest
       - name: Delete existing container
         run: |
           if [ "$(sudo docker ps -aq -f name=demo)" ]; then
