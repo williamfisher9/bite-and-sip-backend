@@ -17,12 +17,14 @@ import com.stripe.param.PaymentIntentCreateParams;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -540,6 +542,19 @@ public class AppServiceImpl implements AppService {
         // handled items for the date
 
 
+        return new ResponseMessage("success", 200);
+    }
+
+    @Override
+    public ResponseMessage initialAuthentication(Long customerId, UserDetails user) {
+        User user1 = userRepository.findById(customerId)
+                .orElseThrow(() -> new UsernameNotFoundException("username was not found"));
+
+        if(!user1.getUsername().equalsIgnoreCase(user.getUsername())){
+            return new ResponseMessage("user details not matching records", 403);
+        }
+        System.out.println(user1.getUsername());
+        System.out.println(user.getUsername());
         return new ResponseMessage("success", 200);
     }
 }

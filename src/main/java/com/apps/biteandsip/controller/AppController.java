@@ -18,6 +18,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -263,6 +266,12 @@ public class AppController {
     @RequestMapping(value = "/checkout/create-confirm-intent", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> createConfirmIntent(@RequestBody Map<String, Object> items)  {
         return new ResponseEntity<>(appService.confirmOrder(items), HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/checkout/initial-authentication/{customerId}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> createConfirmIntent(@PathVariable("customerId") Long customerId,
+                                                               @AuthenticationPrincipal UserDetails user)  {
+        return new ResponseEntity<>(appService.initialAuthentication(customerId, user), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/customer/{customerId}/orders", method = RequestMethod.GET)

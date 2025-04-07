@@ -3,9 +3,11 @@ package com.apps.biteandsip.service;
 import com.apps.biteandsip.dto.*;
 import com.apps.biteandsip.model.Order;
 import com.stripe.exception.StripeException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -49,4 +51,5 @@ public interface AppService {
     ResponseMessage getAdminFoodItems();
 
     ResponseMessage getAdminDashboard();
+    ResponseMessage initialAuthentication(Long customerId, UserDetails user);
 }
