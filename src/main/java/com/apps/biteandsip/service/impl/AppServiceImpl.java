@@ -3,6 +3,7 @@ package com.apps.biteandsip.service.impl;
 import com.apps.biteandsip.dao.*;
 import com.apps.biteandsip.dto.*;
 import com.apps.biteandsip.enums.OrderStatus;
+import com.apps.biteandsip.exceptions.CouponNotFoundException;
 import com.apps.biteandsip.exceptions.FoodCategoryNotFoundException;
 import com.apps.biteandsip.exceptions.FoodItemNotFoundException;
 import com.apps.biteandsip.model.*;
@@ -258,7 +259,7 @@ public class AppServiceImpl implements AppService {
                                           String price,
                                           String description, Long categoryId) {
         FoodCategory foodCategory = foodCategoryRepository.findById(categoryId).orElseThrow(() -> new FoodCategoryNotFoundException("Food item was not found"));
-        FoodItem foodItem = foodItemRepository.findById(id).orElseThrow(() -> new FoodItemNotFoundException("Food category was not found"));
+        FoodItem foodItem = foodItemRepository.findById(id).orElseThrow(() -> new FoodItemNotFoundException("Food item was not found"));
         if(file != null){
             String fileName = storageService.store(file);
             foodItem.setImageSource(fileName);
@@ -347,7 +348,7 @@ public class AppServiceImpl implements AppService {
 
     @Override
     public ResponseMessage updateCoupon(Long id, CouponDTO couponDTO) {
-        Coupon coupon = couponRepository.findById(id).orElseThrow(() -> new FoodCategoryNotFoundException("Coupon was not found"));
+        Coupon coupon = couponRepository.findById(id).orElseThrow(() -> new CouponNotFoundException("Coupon was not found"));
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDate fromDateLocalDate = LocalDate.parse(couponDTO.getFromDate(), formatter);
@@ -390,11 +391,8 @@ public class AppServiceImpl implements AppService {
 
     @Override
     public ResponseMessage getCouponByCode(String code) {
-        Coupon coupon = null;
-        if(!couponRepository.findByCode(code).isEmpty()){
-            coupon = couponRepository.findByCode(code).get(0);
-        }
-        return new ResponseMessage(coupon, coupon == null ? 404 : 200);
+        Coupon coupon = couponRepository.findByCode(code).orElseThrow(() -> new CouponNotFoundException("Coupon was not found"));
+        return new ResponseMessage(coupon, 200);
     }
 
     @Override
@@ -423,13 +421,18 @@ public class AppServiceImpl implements AppService {
     @Transactional
     public ResponseMessage confirmOrder(Map<String, Object> items){
         String confirmationTokenId = (String) items.get("confirmationTokenId");
+        String couponCode = (String) items.get("coupon");
         User user = userRepository.findById(Long.valueOf((String) items.get("customerId"))).orElseThrow(() -> new UsernameNotFoundException(""));
+
+        Coupon coupon = couponRepository.findByCode(couponCode).orElse(null);
 
         Order order = new Order();
         order.setCustomer(user);
         order.setCreationDate(LocalDateTime.now());
         order.setLastUpdateDate(LocalDateTime.now());
         order.setStatus(OrderStatus.RECEIVED);
+
+
 
         Set<OrderItem> orderItems = new HashSet<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -447,14 +450,20 @@ public class AppServiceImpl implements AppService {
             totalAmount = totalAmount.add(BigDecimal.valueOf(foodItem.getPrice()).multiply(BigDecimal.valueOf(cartItemDTO.getQuantity())));
         }
 
-        order.setTotalPrice(totalAmount);
+        if(coupon != null){
+            order.setCoupon(couponCode);
+            order.setTotalPrice(totalAmount.subtract(BigDecimal.valueOf(coupon.getAmount())));
+        } else {
+            order.setTotalPrice(totalAmount);
+        }
+
         order.setDeliveryFee(BigDecimal.valueOf(5L));
         order.setItems(orderItems);
 
         Stripe.apiKey = stripeApiKey;
 
         PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
-                .setAmount(1099L)
+                .setAmount(Long.parseLong(String.valueOf(order.getTotalPrice().multiply(BigDecimal.valueOf(100)))))
                 .setCurrency("usd")
                 .setAutomaticPaymentMethods(PaymentIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true).build())
                 .setConfirm(true)
@@ -489,7 +498,7 @@ public class AppServiceImpl implements AppService {
         for(Order order : orders){
             for(OrderItem orderItem : order.getItems()){
                 orderItem.getItem().setImageSource(
-                        orderItem.getItem().getImageSource().startsWith("https") ?
+                        orderItem.getItem().getImageSource().startsWith("https") || orderItem.getItem().getImageSource().startsWith("http") ?
                                 orderItem.getItem().getImageSource() :
                                 imageDownloadUrl + orderItem.getItem().getImageSource()
                 );

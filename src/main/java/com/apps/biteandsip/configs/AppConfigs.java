@@ -53,7 +53,7 @@ public class AppConfigs {
 
                 //menuRepository.save(new Menu("ADMINISTRATION", "TABLES RESERVATIONS", "/biteandsip/admin/tables-reservations"));
                 menuRepository.save(new Menu("ADMINISTRATION", "SETTINGS", "/biteandsip/admin/settings"));
-                menuRepository.save(new Menu("PRIVATE", "MY ORDERS", "/biteandsip/orders"));
+                menuRepository.save(new Menu("PRIVATE", "MY ORDERS", "/biteandsip/customer/orders"));
                 menuRepository.save(new Menu("PRIVATE", "PROFILE", "/biteandsip/profile"));
 
 

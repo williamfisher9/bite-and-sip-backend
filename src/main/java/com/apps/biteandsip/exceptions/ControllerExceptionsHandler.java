@@ -36,7 +36,19 @@ public class ControllerExceptionsHandler {
 
     @ExceptionHandler(FoodCategoryNotFoundException.class)
     public ResponseEntity<ResponseMessage> handleFoodCategoryNotFoundException(FoodCategoryNotFoundException exc){
-        ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 400);
+        ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 404);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
+    }
+
+    @ExceptionHandler(CouponNotFoundException.class)
+    public ResponseEntity<ResponseMessage> handleCouponNotFoundException(CouponNotFoundException exc){
+        ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 404);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
+    }
+
+    @ExceptionHandler(FoodItemNotFoundException.class)
+    public ResponseEntity<ResponseMessage> handleFoodItemNotFoundException(FoodItemNotFoundException exc){
+        ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 404);
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 

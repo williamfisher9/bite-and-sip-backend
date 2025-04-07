@@ -15,5 +15,5 @@ import java.util.Optional;
 public interface CouponRepository extends JpaRepository<Coupon, Long> {
     List<Coupon> findByCodeContainingIgnoreCase(String val);
 
-    List<Coupon> findByCode(String code);
+    Optional<Coupon> findByCode(String code);
 }
