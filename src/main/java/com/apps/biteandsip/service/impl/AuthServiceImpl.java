@@ -1,9 +1,6 @@
 package com.apps.biteandsip.service.impl;
 
-import com.apps.biteandsip.dao.AuthorityRepository;
-import com.apps.biteandsip.dao.MenuRepository;
-import com.apps.biteandsip.dao.OrderRepository;
-import com.apps.biteandsip.dao.UserRepository;
+import com.apps.biteandsip.dao.*;
 import com.apps.biteandsip.dto.*;
 import com.apps.biteandsip.exceptions.DuplicateUsernameException;
 import com.apps.biteandsip.exceptions.RoleNotFoundException;
@@ -15,6 +12,7 @@ import com.apps.biteandsip.service.StorageService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -42,12 +40,16 @@ public class AuthServiceImpl implements AuthService {
     private final JdbcTemplate jdbcTemplate;
     private final StorageService storageService;
     private final OrderRepository orderRepository;
+    private final PasswordTokenRepository passwordTokenRepository;
 
     @Value("${image.download.url}")
     private String imageDownloadUrl;
 
+    @Value("${backend.url}")
+    private String backendUrl;
+
     @Autowired
-    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, JdbcTemplate jdbcTemplate, StorageService storageService, OrderRepository orderRepository){
+    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, JdbcTemplate jdbcTemplate, StorageService storageService, OrderRepository orderRepository, PasswordTokenRepository passwordTokenRepository){
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
@@ -58,6 +60,7 @@ public class AuthServiceImpl implements AuthService {
         this.jdbcTemplate = jdbcTemplate;
         this.storageService = storageService;
         this.orderRepository = orderRepository;
+        this.passwordTokenRepository = passwordTokenRepository;
     }
 
     @Override
@@ -255,9 +258,38 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public ResponseMessage forgotPassword(String username) {
-        emailService.sendSimpleMessage(username, "reset password email", "reset password link");
-        return new ResponseMessage("Check you inbox for a reset password email", 200);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("username was not found"));
+        PasswordToken passwordToken = new PasswordToken();
+        passwordToken.setToken(UUID.randomUUID().toString());
+        passwordToken.setUserId(user.getId());
+        passwordToken.setTokenExpirationDate(LocalDateTime.now().plusDays(1));
+        passwordTokenRepository.save(passwordToken);
+
+        emailService.sendSimpleMessage(username, "Bite and Sip - Reset Password",
+                "<a href=" + backendUrl + "/api/v1/app/public/reset-password/"  + passwordToken.getToken()  + ">Reset Password</a>");
+        return new ResponseMessage("CHECK YOUR INBOX FOR PASSWORD RESET EMAIL", 200);
     }
+
+    @Override
+    public ResponseMessage resetPassword(String passwordToken) {
+        PasswordToken retrievedToken = passwordTokenRepository.findByToken(passwordToken)
+                .orElseThrow(() -> new UsernameNotFoundException(""));
+
+        if(isTokenNonExpired(retrievedToken)){
+            return new ResponseMessage("proceed", 202);
+        }
+
+        return new ResponseMessage("not found", 404);
+    }
+
+    private boolean isTokenNonExpired(PasswordToken retrievedToken) {
+        if(retrievedToken.getTokenExpirationDate().isAfter(LocalDateTime.now()))
+            return true;
+
+        return false;
+    }
+
 
     @Override
     public ResponseMessage getUserProfile(Long id) {

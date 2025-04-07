@@ -270,7 +270,7 @@ public class AppController {
         return new ResponseEntity<>(appService.confirmOrder(items), HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/checkout/initial-authentication/{customerId}", method = RequestMethod.POST)
+    @RequestMapping(value = "/checkout/authenticate-user/{customerId}", method = RequestMethod.GET)
     public ResponseEntity<ResponseMessage> createConfirmIntent(@PathVariable("customerId") Long customerId)  {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentPrincipalName = authentication.getName();

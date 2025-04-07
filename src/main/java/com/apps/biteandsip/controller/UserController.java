@@ -63,6 +63,12 @@ public class UserController {
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 
+    @RequestMapping(value = "/public/reset-password/{passwordToken}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> resetPassword(@PathVariable String passwordToken){
+        ResponseMessage responseMessage = authService.resetPassword(passwordToken);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
+    }
+
     @RequestMapping(value = "/admin/employees/{id}", method = RequestMethod.GET)
     public ResponseEntity<ResponseMessage> getEmployeeById(@PathVariable("id") Long id){
         ResponseMessage responseMessage = authService.getEmployeeById(id);

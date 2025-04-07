@@ -26,6 +26,9 @@ public interface AuthService {
     ResponseMessage updateEmployee(Long id, EmployeeDTO employeeDTO);
 
     ResponseMessage forgotPassword(String username);
+
+    ResponseMessage resetPassword(String passwordToken);
+
     ResponseMessage getUserProfile(Long id);
 
     ResponseMessage updateUserProfile(Long id,
