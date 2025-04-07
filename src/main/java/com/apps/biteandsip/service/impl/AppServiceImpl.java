@@ -435,7 +435,7 @@ public class AppServiceImpl implements AppService {
 
 
         Set<OrderItem> orderItems = new HashSet<>();
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        BigDecimal subtotal = BigDecimal.ZERO;
 
         for(Object cartItem : (ArrayList<?>) items.get("cartItems")){
             CartItemDTO cartItemDTO = mapper.map(cartItem, CartItemDTO.class);
@@ -447,23 +447,28 @@ public class AppServiceImpl implements AppService {
             orderItem.setTotalPricePerItem(BigDecimal.valueOf(foodItem.getPrice()).multiply(BigDecimal.valueOf(cartItemDTO.getQuantity())));
             orderItems.add(orderItem);
             orderItem.setOrder(order);
-            totalAmount = totalAmount.add(BigDecimal.valueOf(foodItem.getPrice()).multiply(BigDecimal.valueOf(cartItemDTO.getQuantity())));
+            subtotal = subtotal.add(BigDecimal.valueOf(foodItem.getPrice()).multiply(BigDecimal.valueOf(cartItemDTO.getQuantity())));
         }
 
         if(coupon != null){
             order.setCoupon(couponCode);
-            order.setTotalPrice(totalAmount.subtract(BigDecimal.valueOf(coupon.getAmount())));
-        } else {
-            order.setTotalPrice(totalAmount);
+            subtotal = subtotal.subtract(BigDecimal.valueOf(coupon.getAmount()));
         }
 
+        subtotal = subtotal.add(BigDecimal.valueOf(5L));
+
+        BigDecimal taxAmount = subtotal.multiply(BigDecimal.valueOf(5)).divide(BigDecimal.valueOf(100));
         order.setDeliveryFee(BigDecimal.valueOf(5L));
+
+        BigDecimal totalPrice = subtotal.add(taxAmount);
+
+        order.setTotalPrice(totalPrice);
         order.setItems(orderItems);
 
         Stripe.apiKey = stripeApiKey;
 
         PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
-                .setAmount(Long.parseLong(String.valueOf(order.getTotalPrice().multiply(BigDecimal.valueOf(100)))))
+                .setAmount(order.getTotalPrice().multiply(BigDecimal.valueOf(100)).longValue())
                 .setCurrency("usd")
                 .setAutomaticPaymentMethods(PaymentIntentCreateParams.AutomaticPaymentMethods.builder().setEnabled(true).build())
                 .setConfirm(true)
