@@ -452,6 +452,7 @@ public class AppServiceImpl implements AppService {
 
         if(coupon != null){
             order.setCoupon(couponCode);
+            order.setCouponAmount(BigDecimal.valueOf(coupon.getAmount()));
             subtotal = subtotal.subtract(BigDecimal.valueOf(coupon.getAmount()));
         }
 
@@ -462,6 +463,7 @@ public class AppServiceImpl implements AppService {
 
         BigDecimal totalPrice = subtotal.add(taxAmount);
 
+        order.setTax(taxAmount);
         order.setTotalPrice(totalPrice);
         order.setItems(orderItems);
 
