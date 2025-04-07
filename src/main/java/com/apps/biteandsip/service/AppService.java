@@ -51,5 +51,5 @@ public interface AppService {
     ResponseMessage getAdminFoodItems();
 
     ResponseMessage getAdminDashboard();
-    ResponseMessage initialAuthentication(Long customerId, UserDetails user);
+    ResponseMessage initialAuthentication(Long customerId, String currentPrincipalName);
 }

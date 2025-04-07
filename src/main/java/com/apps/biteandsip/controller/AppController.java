@@ -18,7 +18,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -269,9 +271,10 @@ public class AppController {
     }
 
     @RequestMapping(value = "/checkout/initial-authentication/{customerId}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> createConfirmIntent(@PathVariable("customerId") Long customerId,
-                                                               @AuthenticationPrincipal UserDetails user)  {
-        return new ResponseEntity<>(appService.initialAuthentication(customerId, user), HttpStatus.OK);
+    public ResponseEntity<ResponseMessage> createConfirmIntent(@PathVariable("customerId") Long customerId)  {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentPrincipalName = authentication.getName();
+        return new ResponseEntity<>(appService.initialAuthentication(customerId, currentPrincipalName), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/customer/{customerId}/orders", method = RequestMethod.GET)

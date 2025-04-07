@@ -546,14 +546,14 @@ public class AppServiceImpl implements AppService {
     }
 
     @Override
-    public ResponseMessage initialAuthentication(Long customerId, UserDetails user) {
-        User user1 = userRepository.findById(customerId)
+    public ResponseMessage initialAuthentication(Long customerId, String currentPrincipalName) {
+        User user = userRepository.findById(customerId)
                 .orElseThrow(() -> new UsernameNotFoundException("username was not found"));
 
-        if(!user1.getUsername().equalsIgnoreCase(user.getUsername())){
+        if(!user.getUsername().equalsIgnoreCase(currentPrincipalName)){
             return new ResponseMessage("user details not matching records", 403);
         }
-        System.out.println(user1.getUsername());
+
         System.out.println(user.getUsername());
         return new ResponseMessage("success", 200);
     }
