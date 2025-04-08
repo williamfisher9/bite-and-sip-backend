@@ -2,13 +2,15 @@ package com.apps.biteandsip.service.impl;
 
 import com.apps.biteandsip.dao.*;
 import com.apps.biteandsip.dto.*;
-import com.apps.biteandsip.exceptions.DuplicateUsernameException;
-import com.apps.biteandsip.exceptions.RoleNotFoundException;
+import com.apps.biteandsip.enums.UserTokenStatus;
+import com.apps.biteandsip.enums.UserTokenType;
+import com.apps.biteandsip.exceptions.*;
 import com.apps.biteandsip.model.*;
 import com.apps.biteandsip.security.JwtUtils;
 import com.apps.biteandsip.service.AuthService;
 import com.apps.biteandsip.service.EmailService;
 import com.apps.biteandsip.service.StorageService;
+import jakarta.mail.MessagingException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +25,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -40,7 +43,7 @@ public class AuthServiceImpl implements AuthService {
     private final JdbcTemplate jdbcTemplate;
     private final StorageService storageService;
     private final OrderRepository orderRepository;
-    private final PasswordTokenRepository passwordTokenRepository;
+    private final UserTokenRepository userTokenRepository;
 
     @Value("${image.download.url}")
     private String imageDownloadUrl;
@@ -49,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
     private String backendUrl;
 
     @Autowired
-    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, JdbcTemplate jdbcTemplate, StorageService storageService, OrderRepository orderRepository, PasswordTokenRepository passwordTokenRepository){
+    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, JdbcTemplate jdbcTemplate, StorageService storageService, OrderRepository orderRepository, UserTokenRepository userTokenRepository){
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
@@ -60,11 +63,11 @@ public class AuthServiceImpl implements AuthService {
         this.jdbcTemplate = jdbcTemplate;
         this.storageService = storageService;
         this.orderRepository = orderRepository;
-        this.passwordTokenRepository = passwordTokenRepository;
+        this.userTokenRepository = userTokenRepository;
     }
 
     @Override
-    public ResponseMessage createUser(RegisterRequestDTO registerRequestDTO) {
+    public ResponseMessage createUser(RegisterRequestDTO registerRequestDTO) throws MessagingException {
         registerRequestDTO.setPassword(passwordEncoder.encode(registerRequestDTO.getPassword()));
         User user = modelMapper.map(registerRequestDTO, User.class);
 
@@ -77,7 +80,7 @@ public class AuthServiceImpl implements AuthService {
         user.setAccountNonExpired(true);
         user.setAccountNonLocked(true);
         user.setCredentialsNonExpired(true);
-        user.setEnabled(true);
+        user.setEnabled(false);
         user.setUserType(user.getUserType() == null || user.getUserType().equalsIgnoreCase("ADMIN") ?
                 "CUSTOMER" : user.getUserType());
 
@@ -87,9 +90,19 @@ public class AuthServiceImpl implements AuthService {
         user.setAuthorities(Set.of(authority));
         User savedUser = userRepository.save(user);
 
-        emailService.sendSimpleMessage(user.getUsername(), "verification email", "link");
+        UserToken userToken = new UserToken();
+        userToken.setToken(UUID.randomUUID().toString());
+        userToken.setUserId(savedUser.getId());
+        userToken.setTokenExpirationDate(LocalDateTime.now().plusDays(1));
+        userToken.setStatus(UserTokenStatus.NOT_USED);
+        userToken.setType(UserTokenType.VERIFY_ACCOUNT_TOKEN);
+        userTokenRepository.save(userToken);
 
-        return new ResponseMessage(savedUser, 201);
+        emailService.sendSimpleMessage(user.getUsername(),
+                "Bite and Sip - Verify Your Email Address",
+                String.format("<a href='%s%s%s'>Verify Account</a>", backendUrl, "/verify-account/", userToken.getToken()));
+
+        return new ResponseMessage("user created successfully", 201);
     }
 
     @Override
@@ -165,7 +178,8 @@ public class AuthServiceImpl implements AuthService {
 
 
     @Override
-    public ResponseMessage createEmployee(RegisterRequestDTO registerRequestDTO) {
+    @Transactional
+    public ResponseMessage createEmployee(RegisterRequestDTO registerRequestDTO) throws MessagingException {
         if(userRepository.findByUsername(registerRequestDTO.getUsername()).isPresent()){
             throw new DuplicateUsernameException("Username already exists in the system");
         }
@@ -181,7 +195,7 @@ public class AuthServiceImpl implements AuthService {
         user.setAccountNonExpired(true);
         user.setAccountNonLocked(true);
         user.setCredentialsNonExpired(true);
-        user.setEnabled(true);
+        user.setEnabled(false);
 
         Authority authority = authorityRepository.findById(registerRequestDTO.getUserType())
                         .orElseThrow(() -> new RoleNotFoundException("Role was not found!"));
@@ -191,7 +205,18 @@ public class AuthServiceImpl implements AuthService {
         user.setAuthorities(Set.of(authority));
         User savedUser = userRepository.save(user);
 
-        emailService.sendSimpleMessage(user.getUsername(), "verification email", "link");
+        UserToken userToken = new UserToken();
+        userToken.setToken(UUID.randomUUID().toString());
+        userToken.setUserId(savedUser.getId());
+        userToken.setTokenExpirationDate(LocalDateTime.now().plusDays(1));
+        userToken.setStatus(UserTokenStatus.NOT_USED);
+        userToken.setType(UserTokenType.VERIFY_ACCOUNT_AND_SET_PASSWORD_TOKEN);
+        userTokenRepository.save(userToken);
+
+        emailService.sendSimpleMessage(user.getUsername(),
+                "Bite and Sip - Verify Your Email Address and Set Your Password",
+                String.format("<a href='%s%s%s'>Verify Account and Set Password</a>", backendUrl, "/verify-account-and-set-password/", userToken.getToken()));
+
 
         return new ResponseMessage(savedUser, 201);
     }
@@ -257,37 +282,102 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public ResponseMessage forgotPassword(String username) {
+    public ResponseMessage forgotPassword(String username) throws MessagingException {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("username was not found"));
-        PasswordToken passwordToken = new PasswordToken();
-        passwordToken.setToken(UUID.randomUUID().toString());
-        passwordToken.setUserId(user.getId());
-        passwordToken.setTokenExpirationDate(LocalDateTime.now().plusDays(1));
-        passwordTokenRepository.save(passwordToken);
+        UserToken userToken = new UserToken();
+        userToken.setToken(UUID.randomUUID().toString());
+        userToken.setUserId(user.getId());
+        userToken.setTokenExpirationDate(LocalDateTime.now().plusDays(1));
+        userToken.setStatus(UserTokenStatus.NOT_USED);
+        userToken.setType(UserTokenType.PASSWORD_RESET_TOKEN);
+        userTokenRepository.save(userToken);
 
-        emailService.sendSimpleMessage(username, "Bite and Sip - Reset Password",
-                "<a href=" + backendUrl + "/api/v1/app/public/reset-password/"  + passwordToken.getToken()  + ">Reset Password</a>");
+        emailService.sendSimpleMessage(username, "Bite and Sip - Reset Your Password",
+                String.format("<a href='%s%s%s'>Reset Password</a>", backendUrl, "/reset-password/", userToken.getToken()));
         return new ResponseMessage("CHECK YOUR INBOX FOR PASSWORD RESET EMAIL", 200);
     }
 
     @Override
-    public ResponseMessage resetPassword(String passwordToken) {
-        PasswordToken retrievedToken = passwordTokenRepository.findByToken(passwordToken)
+    public ResponseMessage resetPassword(String password, String token) {
+        UserToken retrievedToken = userTokenRepository.findByToken(token)
                 .orElseThrow(() -> new UsernameNotFoundException(""));
 
-        if(isTokenNonExpired(retrievedToken)){
-            return new ResponseMessage("proceed", 202);
+        if(retrievedToken.getStatus() == UserTokenStatus.USED){
+            throw new UserTokenStatusException("Token was used before");
         }
 
-        return new ResponseMessage("not found", 404);
+        if(retrievedToken.getType() != UserTokenType.PASSWORD_RESET_TOKEN){
+            throw new UserTokenTypeException("Token type mismatch");
+        }
+
+        if(!isTokenNonExpired(retrievedToken)) {
+            throw new UserTokenExpired("Token expired");
+        }
+
+        User user = userRepository.findById(retrievedToken.getUserId())
+                .orElseThrow(() -> new UsernameNotFoundException("username was not found"));
+
+        user.setPassword(passwordEncoder.encode(password));
+        user.setLastUpdateDate(LocalDateTime.now());
+        userRepository.save(user);
+
+        retrievedToken.setStatus(UserTokenStatus.USED);
+        userTokenRepository.save(retrievedToken);
+
+        return new ResponseMessage("LOGIN WITH THE NEW PASSWORD", 200);
     }
 
-    private boolean isTokenNonExpired(PasswordToken retrievedToken) {
+    private boolean isTokenNonExpired(UserToken retrievedToken) {
         if(retrievedToken.getTokenExpirationDate().isAfter(LocalDateTime.now()))
             return true;
 
         return false;
+    }
+
+
+
+
+
+    @Override
+    public ResponseMessage verifyUserAccount(String token) throws MessagingException {
+        UserToken retrievedToken = userTokenRepository.findByToken(token)
+                .orElseThrow(() -> new UsernameNotFoundException(""));
+
+        if(retrievedToken.getStatus() == UserTokenStatus.USED){
+            throw new UserTokenStatusException("Token was used for verification");
+        }
+
+        if(!retrievedToken.getType().equals(UserTokenType.VERIFY_ACCOUNT_TOKEN)
+        && !retrievedToken.getType().equals(UserTokenType.VERIFY_ACCOUNT_AND_SET_PASSWORD_TOKEN)){
+            throw new UserTokenTypeException("Token type mismatch");
+        }
+
+        User user = userRepository.findById(retrievedToken.getUserId())
+                .orElseThrow(() -> new UsernameNotFoundException("username was not found"));
+
+        user.setEnabled(true);
+        user.setLastUpdateDate(LocalDateTime.now());
+        userRepository.save(user);
+
+        retrievedToken.setStatus(UserTokenStatus.USED);
+        userTokenRepository.save(retrievedToken);
+
+        if(retrievedToken.getType() == UserTokenType.VERIFY_ACCOUNT_AND_SET_PASSWORD_TOKEN ){
+            UserToken userToken = new UserToken();
+            userToken.setToken(UUID.randomUUID().toString());
+            userToken.setUserId(user.getId());
+            userToken.setTokenExpirationDate(LocalDateTime.now().plusDays(1));
+            userToken.setStatus(UserTokenStatus.NOT_USED);
+            userToken.setType(UserTokenType.PASSWORD_RESET_TOKEN);
+            userTokenRepository.save(userToken);
+
+            emailService.sendSimpleMessage(user.getUsername(), "Bite and Sip - Reset Your Password",
+                    String.format("<a href='%s%s%s'>Reset Password</a>", backendUrl, "/reset-password/", userToken.getToken()));
+            return new ResponseMessage("CHECK YOUR INBOX FOR PASSWORD RESET EMAIL", 200);
+        }
+
+        return new ResponseMessage("ACCOUNT VERIFIED", 200);
     }
 
 

@@ -284,8 +284,8 @@ public class AppController {
     }
 
     @RequestMapping(value = "/admin/orders", method = RequestMethod.GET)
-    public ResponseEntity<ResponseMessage> customerGetOrders(){
-        ResponseMessage responseMessage = appService.getAdminOrders();
+    public ResponseEntity<ResponseMessage> adminGetOrders(@RequestParam String customerId){
+        ResponseMessage responseMessage = appService.getAdminOrders(Long.parseLong(customerId));
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 

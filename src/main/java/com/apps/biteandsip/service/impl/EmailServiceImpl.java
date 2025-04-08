@@ -1,9 +1,13 @@
 package com.apps.biteandsip.service.impl;
 
 import com.apps.biteandsip.service.EmailService;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -11,19 +15,25 @@ public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender javaMailSender;
 
+    @Value("${spring.mail.username}")
+    private String fromEmailAddress;
+
     @Autowired
     public EmailServiceImpl(JavaMailSender javaMailSender) {
         this.javaMailSender = javaMailSender;
     }
 
     @Override
-    public void sendSimpleMessage(String to, String subject, String text) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("fisher.a.william@gmail.com");
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(text);
-        javaMailSender.send(message);
+    public void sendSimpleMessage(String to, String subject, String text) throws MessagingException {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
+
+        helper.setText(text, true);
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setFrom(fromEmailAddress);
+
+        javaMailSender.send(mimeMessage);
     }
 
     /*public String sendSimpleMail(EmailDetails details)

@@ -2,6 +2,7 @@ package com.apps.biteandsip.exceptions;
 
 import com.apps.biteandsip.dto.ResponseMessage;
 import com.stripe.exception.StripeException;
+import jakarta.mail.MessagingException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -49,6 +50,18 @@ public class ControllerExceptionsHandler {
     @ExceptionHandler(FoodItemNotFoundException.class)
     public ResponseEntity<ResponseMessage> handleFoodItemNotFoundException(FoodItemNotFoundException exc){
         ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 404);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
+    }
+
+    @ExceptionHandler(UserTokenException.class)
+    public ResponseEntity<ResponseMessage> handleUserTokenException(UserTokenException exc){
+        ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 400);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
+    }
+
+    @ExceptionHandler(MessagingException.class)
+    public ResponseEntity<ResponseMessage> handleMessagingException(MessagingException exc){
+        ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 400);
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 

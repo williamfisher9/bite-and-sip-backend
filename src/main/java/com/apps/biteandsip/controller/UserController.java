@@ -6,6 +6,7 @@ import com.apps.biteandsip.dto.RegisterRequestDTO;
 import com.apps.biteandsip.dto.ResponseMessage;
 import com.apps.biteandsip.security.JwtUtils;
 import com.apps.biteandsip.service.AuthService;
+import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +41,7 @@ public class UserController {
     }
 
     @RequestMapping(value = "/public/auth/register", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> createUser(@RequestBody @Valid RegisterRequestDTO registerRequestDTO){
+    public ResponseEntity<ResponseMessage> createUser(@RequestBody @Valid RegisterRequestDTO registerRequestDTO) throws MessagingException {
         ResponseMessage responseMessage = authService.createUser(registerRequestDTO);
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
@@ -52,20 +53,26 @@ public class UserController {
     }
 
     @RequestMapping(value = "/admin/employees/new", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> createEmployee(@RequestBody @Valid RegisterRequestDTO registerRequestDTO){
+    public ResponseEntity<ResponseMessage> createEmployee(@RequestBody @Valid RegisterRequestDTO registerRequestDTO) throws MessagingException {
         ResponseMessage responseMessage = authService.createEmployee(registerRequestDTO);
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 
     @RequestMapping(value = "/public/forgot-password", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> handleForgotPassword(@RequestBody Map<String, String> requestParams){
+    public ResponseEntity<ResponseMessage> handleForgotPassword(@RequestBody Map<String, String> requestParams) throws MessagingException {
         ResponseMessage responseMessage = authService.forgotPassword(requestParams.get("username"));
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 
-    @RequestMapping(value = "/public/reset-password/{passwordToken}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> resetPassword(@PathVariable String passwordToken){
-        ResponseMessage responseMessage = authService.resetPassword(passwordToken);
+    @RequestMapping(value = "/public/reset-password", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> resetPassword(@RequestBody Map<String, String> values){
+        ResponseMessage responseMessage = authService.resetPassword(values.get("password"), values.get("token"));
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/public/verify-account", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> verifyAccount(@RequestBody Map<String, String> values) throws MessagingException {
+        ResponseMessage responseMessage = authService.verifyUserAccount(values.get("token"));
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 

@@ -518,8 +518,15 @@ public class AppServiceImpl implements AppService {
     }
 
     @Override
-    public ResponseMessage getAdminOrders() {
-        List<Order> orders = orderRepository.findAll();
+    public ResponseMessage getAdminOrders(Long customerId) {
+        List<Order> orders;
+        if(customerId == 0)
+             orders = orderRepository.findAll();
+        else {
+            User user = userRepository.findById(customerId)
+                    .orElseThrow(() -> new UsernameNotFoundException("username not found"));
+            orders = orderRepository.findByCustomerId(customerId);
+        }
 
         for(Order order : orders){
             for(OrderItem orderItem : order.getItems()){
