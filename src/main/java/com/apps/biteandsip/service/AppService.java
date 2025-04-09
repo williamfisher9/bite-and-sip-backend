@@ -52,4 +52,6 @@ public interface AppService {
 
     ResponseMessage getAdminDashboard();
     ResponseMessage initialAuthentication(Long customerId, String currentPrincipalName);
+
+    ResponseMessage updateFoodItemOrder(Map<String, String> values);
 }

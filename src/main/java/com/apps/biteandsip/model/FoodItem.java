@@ -25,6 +25,8 @@ public class FoodItem implements Serializable {
 
     private boolean active;
 
+    private int sortingOrder;
+
 
 
     @ManyToOne
@@ -108,17 +110,27 @@ public class FoodItem implements Serializable {
         this.category = category;
     }
 
+
+
+    public int getSortingOrder() {
+        return sortingOrder;
+    }
+
+    public void setSortingOrder(int sortingOrder) {
+        this.sortingOrder = sortingOrder;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FoodItem foodItem = (FoodItem) o;
-        return rating == foodItem.rating && active == foodItem.active && Objects.equals(id, foodItem.id) && Objects.equals(name, foodItem.name) && Objects.equals(imageSource, foodItem.imageSource) && Objects.equals(description, foodItem.description) && Objects.equals(price, foodItem.price) && Objects.equals(category, foodItem.category);
+        return Float.compare(price, foodItem.price) == 0 && rating == foodItem.rating && active == foodItem.active && sortingOrder == foodItem.sortingOrder && Objects.equals(id, foodItem.id) && Objects.equals(name, foodItem.name) && Objects.equals(imageSource, foodItem.imageSource) && Objects.equals(description, foodItem.description) && Objects.equals(category, foodItem.category);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, imageSource, description, price, rating, active, category);
+        return Objects.hash(id, name, imageSource, description, price, rating, active, sortingOrder, category);
     }
 
     @Override
@@ -128,9 +140,10 @@ public class FoodItem implements Serializable {
                 ", name='" + name + '\'' +
                 ", imageSource='" + imageSource + '\'' +
                 ", description='" + description + '\'' +
-                ", price='" + price + '\'' +
+                ", price=" + price +
                 ", rating=" + rating +
                 ", active=" + active +
+                ", sortingOrder=" + sortingOrder +
                 ", category=" + category +
                 '}';
     }

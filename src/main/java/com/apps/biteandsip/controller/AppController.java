@@ -178,6 +178,12 @@ public class AppController {
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
+    @RequestMapping(value = "/admin/food-items/update-order", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> updateFoodItemOrder(@RequestBody Map<String, String> values){
+        ResponseMessage responseMessage = appService.updateFoodItemOrder(values);
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
     @RequestMapping(value = "/checkout/create-payment-intent", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> createPaymentIntent(@RequestBody StripePaymentIntentDTO intentDTO) throws StripeException {
         return new ResponseEntity<>(appService.createPaymentIntent(intentDTO), HttpStatus.OK);

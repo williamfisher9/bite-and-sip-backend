@@ -112,6 +112,8 @@ public class AppServiceImpl implements AppService {
 
         foodItem.setCategory(category);
 
+        foodItem.setSortingOrder(0);
+
         return new ResponseMessage(foodItemRepository.save(foodItem), 200);
     }
 
@@ -167,6 +169,8 @@ public class AppServiceImpl implements AppService {
             foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
         }
 
+        foodItems.sort(Comparator.comparingInt(FoodItem::getSortingOrder));
+
         return new ResponseMessage(foodItems, 200);
     }
 
@@ -188,9 +192,11 @@ public class AppServiceImpl implements AppService {
             foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
         }
 
+
+
         Map<String, Object> response = new HashMap<>();
         response.put("categories", categories);
-        response.put("foodItems", foodItems);
+        response.put("foodItems", foodItems.stream().sorted(Comparator.comparingInt(FoodItem::getSortingOrder)));
         return new ResponseMessage(response, 200);
     }
 
@@ -207,6 +213,8 @@ public class AppServiceImpl implements AppService {
         for(FoodItem foodItem: foodItems){
             foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
         }
+
+        foodItems.sort(Comparator.comparingInt(FoodItem::getSortingOrder));
 
         Map<String, Object> response = new HashMap<>();
         response.put("categories", categories);
@@ -231,7 +239,7 @@ public class AppServiceImpl implements AppService {
 
     @Override
     public ResponseMessage getFoodItemsByCategoryId(Long id) {
-        List<FoodItem> foodItems;
+        List<FoodItem> foodItems = new ArrayList<>();
         if(id == 0){
             foodItems = foodItemRepository.findAll()
                     .stream().filter(item -> item.isActive() && item.getCategory().isActive())
@@ -250,7 +258,8 @@ public class AppServiceImpl implements AppService {
             }
         }
 
-        return new ResponseMessage(foodItems, 200);
+
+        return new ResponseMessage(foodItems.stream().sorted(Comparator.comparingInt(FoodItem::getSortingOrder)), 200);
     }
 
     @Override
@@ -563,5 +572,67 @@ public class AppServiceImpl implements AppService {
 
         System.out.println(user.getUsername());
         return new ResponseMessage("success", 200);
+    }
+
+    @Override
+    public ResponseMessage updateFoodItemOrder(Map<String, String> values) {
+        Long item1Id = Long.parseLong(values.get("item1Id"));
+        Long item2Id = Long.parseLong(values.get("item2Id"));
+
+        System.out.println(item1Id);
+        System.out.println(item2Id);
+
+        FoodItem foodItem1 = foodItemRepository.findById(item1Id)
+                .orElseThrow(() -> new FoodItemNotFoundException("food item was not found"));
+
+        FoodItem foodItem2 = foodItemRepository.findById(item2Id)
+                .orElseThrow(() -> new FoodItemNotFoundException("food item was not found"));
+
+        List<FoodItem> foodItems = foodItemRepository.findAll();
+
+        foodItems.sort(Comparator.comparingInt(FoodItem::getSortingOrder));
+
+        List<FoodItem> newList = new ArrayList<>();
+
+        int index = 0;
+        for(FoodItem foodItem : foodItems){
+            if(foodItem.getId() != foodItem1.getId() &&
+                    foodItem.getSortingOrder() <= foodItem2.getSortingOrder()){
+                foodItem.setSortingOrder(++index);
+                newList.add(foodItem);
+            }
+        }
+        foodItem1.setSortingOrder(++index);
+        newList.add(foodItem1);
+
+        for(FoodItem foodItem : foodItems){
+            if(foodItem.getSortingOrder() > foodItem2.getSortingOrder()){
+                foodItem.setSortingOrder(++index);
+                newList.add(foodItem);
+            }
+        }
+
+        //foodItem1.setSortingOrder(item2Position);
+        //foodItem2.setSortingOrder(item1Position);
+
+        foodItemRepository.saveAll(newList);
+
+        List<FoodCategory> categories = foodCategoryRepository.findAll();
+
+        List<FoodItem> latestFoodItems = foodItemRepository.findAll();
+        latestFoodItems.sort(Comparator.comparingInt(FoodItem::getSortingOrder));
+
+        for(FoodCategory category: categories){
+            category.setImageSource(imageDownloadUrl + category.getImageSource());
+        }
+
+        for(FoodItem foodItem: latestFoodItems){
+            foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("categories", categories);
+        response.put("foodItems", latestFoodItems);
+        return new ResponseMessage(response, 200);
     }
 }
