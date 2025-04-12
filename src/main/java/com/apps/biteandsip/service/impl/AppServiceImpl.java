@@ -17,14 +17,16 @@ import com.stripe.param.PaymentIntentCreateParams;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
-import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -85,6 +87,10 @@ public class AppServiceImpl implements AppService {
         FoodItem foodItem = new FoodItem(name, fileName, description, Float.parseFloat(price), 0, active);
         foodItem.setCategory(foodCategory);
 
+        int max = foodItemRepository.findTopSortingOrder().orElse(0);
+
+        foodItem.setSortingOrder(max+1);
+
         return new ResponseMessage(foodItemRepository.save(foodItem), 201);
     }
 
@@ -102,7 +108,7 @@ public class AppServiceImpl implements AppService {
         return new ResponseMessage(foodCategoryRepository.save(foodCategory), 200);
     }
 
-    @Override
+    /*@Override
     public ResponseMessage createFoodItem(FoodItemDTO foodItemDTO) {
         FoodItem foodItem = mapper.map(foodItemDTO, FoodItem.class);
         foodItem.setActive(false);
@@ -115,7 +121,7 @@ public class AppServiceImpl implements AppService {
         foodItem.setSortingOrder(0);
 
         return new ResponseMessage(foodItemRepository.save(foodItem), 200);
-    }
+    }*/
 
 
 
@@ -127,9 +133,9 @@ public class AppServiceImpl implements AppService {
     @Override
     public ResponseMessage getFoodCategories() {
         List<FoodCategory> categories = foodCategoryRepository.findAll();
-        for(FoodCategory foodCategory: categories){
-            foodCategory.setImageSource(imageDownloadUrl + foodCategory.getImageSource());
-        }
+
+        setFullImageDownloadLink(categories, null);
+
         return new ResponseMessage(categories, 200);
     }
 
@@ -142,21 +148,19 @@ public class AppServiceImpl implements AppService {
 
     @Override
     public ResponseMessage searchFoodCategories(String val) {
-        List<FoodCategory> foodCategories;
+        List<FoodCategory> categories;
         if(val.isEmpty()){
-            foodCategories = foodCategoryRepository.findAll();
+            categories = foodCategoryRepository.findAll();
         } else {
-            foodCategories = foodCategoryRepository.findByNameContainingIgnoreCase(val);
+            categories = foodCategoryRepository.findByNameContainingIgnoreCase(val);
         }
 
-        for(FoodCategory foodCategory: foodCategories){
-            foodCategory.setImageSource(imageDownloadUrl + foodCategory.getImageSource());
-        }
+        setFullImageDownloadLink(categories, null);
 
-        return new ResponseMessage(foodCategories, 200);
+        return new ResponseMessage(categories, 200);
     }
 
-    @Override
+    /*@Override
     public ResponseMessage searchFoodItems(String val) {
         List<FoodItem> foodItems;
         if(val.isEmpty()){
@@ -165,14 +169,12 @@ public class AppServiceImpl implements AppService {
             foodItems = foodItemRepository.findByNameContainingIgnoreCase(val);
         }
 
-        for(FoodItem foodItem: foodItems){
-            foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
-        }
+        setFullImageDownloadLink(null, foodItems);
 
         foodItems.sort(Comparator.comparingInt(FoodItem::getSortingOrder));
 
         return new ResponseMessage(foodItems, 200);
-    }
+    }*/
 
     @Override
     public ResponseMessage getFoodItems() {
@@ -184,15 +186,7 @@ public class AppServiceImpl implements AppService {
                 .stream().filter(item -> item.isActive() && item.getCategory().isActive())
                 .toList();
 
-        for(FoodCategory category: categories){
-            category.setImageSource(imageDownloadUrl + category.getImageSource());
-        }
-
-        for(FoodItem foodItem: foodItems){
-            foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
-        }
-
-
+        setFullImageDownloadLink(categories, foodItems);
 
         Map<String, Object> response = new HashMap<>();
         response.put("categories", categories);
@@ -201,20 +195,20 @@ public class AppServiceImpl implements AppService {
     }
 
     @Override
-    public ResponseMessage getAdminFoodItems() {
+    public ResponseMessage getAdminFoodItems(int pageNumber, int pageSize, String searchVal) {
         List<FoodCategory> categories = foodCategoryRepository.findAll();
 
-        List<FoodItem> foodItems = foodItemRepository.findAll();
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by("sortingOrder"));
+        Page<FoodItem> foodItems;
 
-        for(FoodCategory category: categories){
-            category.setImageSource(imageDownloadUrl + category.getImageSource());
-        }
+        if(searchVal.isEmpty())
+            foodItems = foodItemRepository.findAll(pageable);
+        else
+            foodItems = foodItemRepository.findByNameContainingIgnoreCase(searchVal, pageable);
 
-        for(FoodItem foodItem: foodItems){
-            foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
-        }
+        setFullImageDownloadLink(categories, foodItems);
 
-        foodItems.sort(Comparator.comparingInt(FoodItem::getSortingOrder));
+        //foodItems.sort(Comparator.comparingInt(FoodItem::getSortingOrder));
 
         Map<String, Object> response = new HashMap<>();
         response.put("categories", categories);
@@ -222,6 +216,27 @@ public class AppServiceImpl implements AppService {
         return new ResponseMessage(response, 200);
     }
 
+    private void setFullImageDownloadLink(List<FoodCategory> categories, Object foodItems) {
+        if(categories != null){
+            for(FoodCategory category: categories){
+                category.setImageSource(imageDownloadUrl + category.getImageSource());
+            }
+        }
+
+        if(foodItems != null){
+            if(foodItems instanceof List<?>){
+                for(FoodItem foodItem: (List<FoodItem>) foodItems){
+                    foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
+                }
+            }
+
+            if(foodItems instanceof Page<?>){
+                for(FoodItem foodItem: (Page<FoodItem>) foodItems){
+                    foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
+                }
+            }
+        }
+    }
 
 
     @Override
@@ -239,25 +254,18 @@ public class AppServiceImpl implements AppService {
 
     @Override
     public ResponseMessage getFoodItemsByCategoryId(Long id) {
-        List<FoodItem> foodItems = new ArrayList<>();
+        List<FoodItem> foodItems;
         if(id == 0){
             foodItems = foodItemRepository.findAll()
                     .stream().filter(item -> item.isActive() && item.getCategory().isActive())
                     .toList();
-
-            for(FoodItem foodItem: foodItems){
-                foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
-            }
         } else {
             foodItems = foodItemRepository.findByCategoryId(id)
                     .stream().filter(item -> item.isActive() && item.getCategory().isActive())
                     .toList();
-
-            for(FoodItem foodItem: foodItems){
-                foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
-            }
         }
 
+        setFullImageDownloadLink(null, foodItems);
 
         return new ResponseMessage(foodItems.stream().sorted(Comparator.comparingInt(FoodItem::getSortingOrder)), 200);
     }
@@ -570,69 +578,40 @@ public class AppServiceImpl implements AppService {
             return new ResponseMessage("user details not matching records", 403);
         }
 
-        System.out.println(user.getUsername());
         return new ResponseMessage("success", 200);
     }
 
     @Override
     public ResponseMessage updateFoodItemOrder(Map<String, String> values) {
-        Long item1Id = Long.parseLong(values.get("item1Id"));
-        Long item2Id = Long.parseLong(values.get("item2Id"));
+        int draggedItemIndex = Integer.parseInt(values.get("draggedItemIndex"));
+        int draggedOverItemIndex = Integer.parseInt(values.get("draggedOverItemIndex"));
 
-        System.out.println(item1Id);
-        System.out.println(item2Id);
-
-        FoodItem foodItem1 = foodItemRepository.findById(item1Id)
-                .orElseThrow(() -> new FoodItemNotFoundException("food item was not found"));
-
-        FoodItem foodItem2 = foodItemRepository.findById(item2Id)
-                .orElseThrow(() -> new FoodItemNotFoundException("food item was not found"));
-
+        // find all items and sort by sorting order
         List<FoodItem> foodItems = foodItemRepository.findAll();
-
         foodItems.sort(Comparator.comparingInt(FoodItem::getSortingOrder));
 
-        List<FoodItem> newList = new ArrayList<>();
+        List<FoodItem> toBeRemoved = foodItems.stream()
+                .filter((item) -> item.getSortingOrder() == draggedItemIndex).toList();
+        foodItems.remove(toBeRemoved.get(0));
+        foodItems.add(draggedOverItemIndex, toBeRemoved.get(0));
 
         int index = 0;
         for(FoodItem foodItem : foodItems){
-            if(foodItem.getId() != foodItem1.getId() &&
-                    foodItem.getSortingOrder() <= foodItem2.getSortingOrder()){
-                foodItem.setSortingOrder(++index);
-                newList.add(foodItem);
-            }
-        }
-        foodItem1.setSortingOrder(++index);
-        newList.add(foodItem1);
-
-        for(FoodItem foodItem : foodItems){
-            if(foodItem.getSortingOrder() > foodItem2.getSortingOrder()){
-                foodItem.setSortingOrder(++index);
-                newList.add(foodItem);
-            }
+            foodItem.setSortingOrder(index++);
         }
 
-        //foodItem1.setSortingOrder(item2Position);
-        //foodItem2.setSortingOrder(item1Position);
 
-        foodItemRepository.saveAll(newList);
+        foodItemRepository.saveAll(foodItems);
 
         List<FoodCategory> categories = foodCategoryRepository.findAll();
+        foodItems = foodItemRepository.findAll();
+        foodItems.sort(Comparator.comparingInt(FoodItem::getSortingOrder));
 
-        List<FoodItem> latestFoodItems = foodItemRepository.findAll();
-        latestFoodItems.sort(Comparator.comparingInt(FoodItem::getSortingOrder));
-
-        for(FoodCategory category: categories){
-            category.setImageSource(imageDownloadUrl + category.getImageSource());
-        }
-
-        for(FoodItem foodItem: latestFoodItems){
-            foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
-        }
+        setFullImageDownloadLink(categories, foodItems);
 
         Map<String, Object> response = new HashMap<>();
         response.put("categories", categories);
-        response.put("foodItems", latestFoodItems);
+        response.put("foodItems", foodItems);
         return new ResponseMessage(response, 200);
     }
 }

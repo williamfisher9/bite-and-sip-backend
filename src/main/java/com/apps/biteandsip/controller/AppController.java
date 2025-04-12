@@ -130,8 +130,10 @@ public class AppController {
     }
 
     @RequestMapping(value = "/admin/food-items", method = RequestMethod.GET)
-    public ResponseEntity<ResponseMessage> adminFoodItems(){
-        ResponseMessage responseMessage = appService.getAdminFoodItems();
+    public ResponseEntity<ResponseMessage> adminFoodItems(@RequestParam("page_number") int pageNumber,
+                                                          @RequestParam("page_size") int pageSize,
+                                                          @RequestParam("search_val") String searchVal){
+        ResponseMessage responseMessage = appService.getAdminFoodItems(pageNumber, pageSize, searchVal);
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
@@ -148,17 +150,18 @@ public class AppController {
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
-    @RequestMapping(value = "/admin/food-items/search", method = RequestMethod.POST)
+    /*@RequestMapping(value = "/admin/food-items/search", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> adminFoodItemsSearch(@RequestBody Map<String, String> values){
         ResponseMessage responseMessage = null;
         if(!values.get("val").equalsIgnoreCase("-")){
             responseMessage = appService.searchFoodItems(values.get("val"));
         } else {
-            responseMessage = appService.getAdminFoodItems();
+            responseMessage = appService.getAdminFoodItems(Integer.parseInt(values.get("pageNumber")),
+                    Integer.parseInt(values.get("pageSize")));
         }
 
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
-    }
+    }*/
 
     @RequestMapping(value = "/admin/food-categories/{itemId}", method = RequestMethod.GET)
     public ResponseEntity<ResponseMessage> adminGetFoodCategoryById(@PathVariable("itemId") Long itemId){
@@ -172,11 +175,11 @@ public class AppController {
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
-    @RequestMapping(value = "/admin/food-items", method = RequestMethod.POST)
+    /*@RequestMapping(value = "/admin/food-items", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> createFoodItem(@RequestBody @Valid FoodItemDTO foodItemDTO){
         ResponseMessage responseMessage = appService.createFoodItem(foodItemDTO);
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
-    }
+    }*/
 
     @RequestMapping(value = "/admin/food-items/update-order", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> updateFoodItemOrder(@RequestBody Map<String, String> values){

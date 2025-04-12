@@ -18,12 +18,12 @@ public interface AppService {
     ResponseMessage createFoodItem(MultipartFile file, String name, boolean active, String price, String description, Long categoryId);
 
     ResponseMessage updateCategory(Long id ,String name, boolean active, MultipartFile file);
-    ResponseMessage createFoodItem(FoodItemDTO foodItem);
+    //ResponseMessage createFoodItem(FoodItemDTO foodItem);
     ResponseMessage getParamValueByName(String name);
     ResponseMessage getFoodCategories();
     ResponseMessage getFoodCategoryById(Long id);
     ResponseMessage searchFoodCategories(String val);
-    ResponseMessage searchFoodItems(String val);
+    //ResponseMessage searchFoodItems(String val);
     ResponseMessage getFoodItems();
     ResponseMessage getFoodItemById(Long id);
     ResponseMessage getFoodItemsByCategoryId(Long id);
@@ -48,7 +48,7 @@ public interface AppService {
     ResponseMessage getCustomerOrders(Long customerId);
     ResponseMessage getAdminOrders(Long customerId);
 
-    ResponseMessage getAdminFoodItems();
+    ResponseMessage getAdminFoodItems(int pageNumber, int pageSize, String searchVal);
 
     ResponseMessage getAdminDashboard();
     ResponseMessage initialAuthentication(Long customerId, String currentPrincipalName);
