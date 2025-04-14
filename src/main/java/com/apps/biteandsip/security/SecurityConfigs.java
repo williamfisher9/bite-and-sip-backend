@@ -69,10 +69,21 @@ public class SecurityConfigs {
         http
                 .cors(cors-> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf-> csrf.disable())
-                .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/public/**", "/h2-console/**", "/favicon.ico").permitAll())
-                .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/admin/**").hasRole("ADMIN"))
-                .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/checkout/**", "/api/v1/app/customer/**").hasRole("CUSTOMER"))
-                .authorizeHttpRequests((request) -> request.requestMatchers("/api/v1/app/users/profile/**").hasAnyRole("CUSTOMER", "ADMIN", "KITCHEN", "WAITER"))
+                .authorizeHttpRequests((request) -> request
+                        .requestMatchers("/api/v1/app/public/**", "/h2-console/**", "/favicon.ico")
+                        .permitAll())
+                .authorizeHttpRequests((request) -> request
+                        .requestMatchers("/api/v1/app/admin/orders/**", "/api/v1/app/admin/users/customers/**", "/api/v1/app/admin/dashboard/**")
+                        .hasAnyRole("ADMIN", "KITCHEN", "WAITER"))
+                .authorizeHttpRequests((request) -> request
+                        .requestMatchers("/api/v1/app/admin/**")
+                        .hasRole("ADMIN"))
+                .authorizeHttpRequests((request) -> request
+                        .requestMatchers("/api/v1/app/checkout/**", "/api/v1/app/customer/**")
+                        .hasRole("CUSTOMER"))
+                .authorizeHttpRequests((request) -> request
+                        .requestMatchers("/api/v1/app/users/profile/**")
+                        .hasAnyRole("CUSTOMER", "ADMIN", "KITCHEN", "WAITER"))
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling((exception) -> exception.authenticationEntryPoint(authenticationEntryPoint))

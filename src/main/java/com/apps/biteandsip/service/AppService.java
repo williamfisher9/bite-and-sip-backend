@@ -22,7 +22,7 @@ public interface AppService {
     ResponseMessage getParamValueByName(String name);
     ResponseMessage getFoodCategories();
     ResponseMessage getFoodCategoryById(Long id);
-    ResponseMessage searchFoodCategories(String val);
+    //ResponseMessage searchFoodCategories(String val);
     //ResponseMessage searchFoodItems(String val);
     ResponseMessage getFoodItems();
     ResponseMessage getFoodItemById(Long id);
@@ -50,8 +50,13 @@ public interface AppService {
 
     ResponseMessage getAdminFoodItems(int pageNumber, int pageSize, String searchVal);
 
+    ResponseMessage getAdminFoodCategories(int pageNumber, int pageSize, String searchVal);
+
     ResponseMessage getAdminDashboard();
     ResponseMessage initialAuthentication(Long customerId, String currentPrincipalName);
 
     ResponseMessage updateFoodItemOrder(Map<String, String> values);
+    ResponseMessage updateFoodCategoryOrder(Map<String, String> values);
+
+    ResponseMessage updateOrderStatus(Map<String, String> values);
 }

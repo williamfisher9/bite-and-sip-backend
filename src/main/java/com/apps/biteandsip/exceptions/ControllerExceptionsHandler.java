@@ -41,6 +41,12 @@ public class ControllerExceptionsHandler {
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<ResponseMessage> handleOrderNotFoundException(OrderNotFoundException exc){
+        ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 404);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
+    }
+
     @ExceptionHandler(CouponNotFoundException.class)
     public ResponseEntity<ResponseMessage> handleCouponNotFoundException(CouponNotFoundException exc){
         ResponseMessage responseMessage = new ResponseMessage(exc.getMessage(), 404);

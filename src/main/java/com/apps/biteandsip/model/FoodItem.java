@@ -27,8 +27,6 @@ public class FoodItem implements Serializable {
 
     private int sortingOrder;
 
-
-
     @ManyToOne
     @JoinColumn(name = "category_id", referencedColumnName = "id")
     @JsonIgnoreProperties("items")
@@ -102,22 +100,20 @@ public class FoodItem implements Serializable {
         this.active = active;
     }
 
-    public FoodCategory getCategory() {
-        return category;
-    }
-
-    public void setCategory(FoodCategory category) {
-        this.category = category;
-    }
-
-
-
     public int getSortingOrder() {
         return sortingOrder;
     }
 
     public void setSortingOrder(int sortingOrder) {
         this.sortingOrder = sortingOrder;
+    }
+
+    public FoodCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(FoodCategory category) {
+        this.category = category;
     }
 
     @Override

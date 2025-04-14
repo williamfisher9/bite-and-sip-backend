@@ -3,11 +3,9 @@ package com.apps.biteandsip.dto;
 public class FoodCategoryDTO {
     private String name;
     private String imageSource;
-
-    public FoodCategoryDTO(String name, String imageSource) {
-        this.name = name;
-        this.imageSource = imageSource;
-    }
+    private Long id;
+    private int sortingOrder;
+    private boolean active;
 
     public String getName() {
         return name;
@@ -25,5 +23,27 @@ public class FoodCategoryDTO {
         this.imageSource = imageSource;
     }
 
+    public Long getId() {
+        return id;
+    }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public int getSortingOrder() {
+        return sortingOrder;
+    }
+
+    public void setSortingOrder(int sortingOrder) {
+        this.sortingOrder = sortingOrder;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
 }

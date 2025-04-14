@@ -85,10 +85,22 @@ public class AppConfigs {
                         menuRepository.findByMenuItem("PROFILE").get()
                 ));
 
+                Set<Menu> employeeMenu = new HashSet<>();
+                employeeMenu.addAll(Set.of(
+                        menuRepository.findByMenuItem("HOME").get(),
+                        menuRepository.findByMenuItem("MENU").get(),
+                        menuRepository.findByMenuItem("ABOUT").get(),
+                        menuRepository.findByMenuItem("CONTACT").get(),
+                        menuRepository.findByMenuItem("CUSTOMERS").get(),
+                        menuRepository.findByMenuItem("ORDERS").get(),
+                        menuRepository.findByMenuItem("DASHBOARD").get(),
+                        menuRepository.findByMenuItem("PROFILE").get()
+                ));
+
                 authorityRepository.save(new Authority("ROLE_ADMIN", adminMenu));
                 authorityRepository.save(new Authority("ROLE_CUSTOMER", customerMenu));
-                authorityRepository.save(new Authority("ROLE_KITCHEN"));
-                authorityRepository.save(new Authority("ROLE_WAITER"));
+                authorityRepository.save(new Authority("ROLE_KITCHEN", employeeMenu));
+                authorityRepository.save(new Authority("ROLE_WAITER", employeeMenu));
 
                 LOG.info("Database initialized!");
             } else {

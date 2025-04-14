@@ -3,6 +3,7 @@ package com.apps.biteandsip.controller;
 import com.apps.biteandsip.dto.*;
 import com.apps.biteandsip.model.FoodItem;
 import com.apps.biteandsip.model.Order;
+import com.apps.biteandsip.model.User;
 import com.apps.biteandsip.service.AppService;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
@@ -111,7 +112,8 @@ public class AppController {
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
-    @RequestMapping(value = "/admin/food-items/update/{id}", method = RequestMethod.PUT, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequestMapping(value = "/admin/food-items/update/{id}", method = RequestMethod.PUT,
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseMessage> updateFoodItem(@PathVariable("id") Long id,
                                                           @RequestParam("name") String name,
                                                           @RequestParam("price") String price,
@@ -124,7 +126,15 @@ public class AppController {
     }
 
     @RequestMapping(value = "/admin/food-categories", method = RequestMethod.GET)
-    public ResponseEntity<ResponseMessage> adminFoodCategories(){
+    public ResponseEntity<ResponseMessage> adminFoodCategories(@RequestParam("page_number") int pageNumber,
+                                                               @RequestParam("page_size") int pageSize,
+                                                               @RequestParam("search_val") String searchVal){
+        ResponseMessage responseMessage = appService.getAdminFoodCategories(pageNumber, pageSize, searchVal);
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/food-categories-ddl", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> getAdminFoodCategoriesDDL(){
         ResponseMessage responseMessage = appService.getFoodCategories();
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
@@ -137,31 +147,6 @@ public class AppController {
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
-
-    @RequestMapping(value = "/admin/food-categories/search", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> adminFoodCategoriesSearch(@RequestBody Map<String, String> values){
-        ResponseMessage responseMessage = null;
-        if(!values.get("val").equalsIgnoreCase("-")){
-            responseMessage = appService.searchFoodCategories(values.get("val"));
-        } else {
-            responseMessage = appService.getFoodCategories();
-        }
-
-        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
-    }
-
-    /*@RequestMapping(value = "/admin/food-items/search", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> adminFoodItemsSearch(@RequestBody Map<String, String> values){
-        ResponseMessage responseMessage = null;
-        if(!values.get("val").equalsIgnoreCase("-")){
-            responseMessage = appService.searchFoodItems(values.get("val"));
-        } else {
-            responseMessage = appService.getAdminFoodItems(Integer.parseInt(values.get("pageNumber")),
-                    Integer.parseInt(values.get("pageSize")));
-        }
-
-        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
-    }*/
 
     @RequestMapping(value = "/admin/food-categories/{itemId}", method = RequestMethod.GET)
     public ResponseEntity<ResponseMessage> adminGetFoodCategoryById(@PathVariable("itemId") Long itemId){
@@ -184,6 +169,12 @@ public class AppController {
     @RequestMapping(value = "/admin/food-items/update-order", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> updateFoodItemOrder(@RequestBody Map<String, String> values){
         ResponseMessage responseMessage = appService.updateFoodItemOrder(values);
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/food-categories/update-order", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> updateFoodCategoryOrder(@RequestBody Map<String, String> values){
+        ResponseMessage responseMessage = appService.updateFoodCategoryOrder(values);
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
@@ -277,6 +268,16 @@ public class AppController {
     @RequestMapping(value = "/checkout/create-confirm-intent", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> createConfirmIntent(@RequestBody Map<String, Object> items)  {
         return new ResponseEntity<>(appService.confirmOrder(items), HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/admin/orders/update", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> updateOrderStatus(@RequestBody Map<String, String> values)  {
+        String authority = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream().toList().get(0).getAuthority();
+        if(!authority.equalsIgnoreCase("ROLE_KITCHEN") && !authority.equalsIgnoreCase("ROLE_WAITER"))
+            return new ResponseEntity<>(new ResponseMessage("improper authority type", 400), HttpStatus.BAD_REQUEST);
+
+        return new ResponseEntity<>(appService.updateOrderStatus(values), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/checkout/authenticate-user/{customerId}", method = RequestMethod.GET)

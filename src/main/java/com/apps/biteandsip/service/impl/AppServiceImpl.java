@@ -6,6 +6,7 @@ import com.apps.biteandsip.enums.OrderStatus;
 import com.apps.biteandsip.exceptions.CouponNotFoundException;
 import com.apps.biteandsip.exceptions.FoodCategoryNotFoundException;
 import com.apps.biteandsip.exceptions.FoodItemNotFoundException;
+import com.apps.biteandsip.exceptions.OrderNotFoundException;
 import com.apps.biteandsip.model.*;
 import com.apps.biteandsip.service.AppService;
 import com.apps.biteandsip.service.StorageService;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class AppServiceImpl implements AppService {
@@ -73,6 +76,13 @@ public class AppServiceImpl implements AppService {
         FoodCategory foodCategory = new FoodCategory(name, fileName);
         foodCategory.setActive(active);
 
+        if(foodCategoryRepository.count() == 0){
+            foodCategory.setSortingOrder(0);
+        } else {
+            int max = foodCategoryRepository.findTopSortingOrder().get();
+            foodCategory.setSortingOrder(max+1);
+        }
+
         return new ResponseMessage(foodCategoryRepository.save(foodCategory), 201);
     }
 
@@ -87,9 +97,12 @@ public class AppServiceImpl implements AppService {
         FoodItem foodItem = new FoodItem(name, fileName, description, Float.parseFloat(price), 0, active);
         foodItem.setCategory(foodCategory);
 
-        int max = foodItemRepository.findTopSortingOrder().orElse(0);
-
-        foodItem.setSortingOrder(max+1);
+        if(foodItemRepository.count() == 0){
+            foodItem.setSortingOrder(0);
+        } else {
+            int max = foodItemRepository.findTopSortingOrder().get();
+            foodItem.setSortingOrder(max+1);
+        }
 
         return new ResponseMessage(foodItemRepository.save(foodItem), 201);
     }
@@ -108,23 +121,6 @@ public class AppServiceImpl implements AppService {
         return new ResponseMessage(foodCategoryRepository.save(foodCategory), 200);
     }
 
-    /*@Override
-    public ResponseMessage createFoodItem(FoodItemDTO foodItemDTO) {
-        FoodItem foodItem = mapper.map(foodItemDTO, FoodItem.class);
-        foodItem.setActive(false);
-        foodItem.setRating(0);
-        FoodCategory category = foodCategoryRepository.findById(foodItemDTO.getFoodCategory())
-                .orElseThrow(() -> new FoodCategoryNotFoundException("Food category was not found"));
-
-        foodItem.setCategory(category);
-
-        foodItem.setSortingOrder(0);
-
-        return new ResponseMessage(foodItemRepository.save(foodItem), 200);
-    }*/
-
-
-
     @Override
     public ResponseMessage getParamValueByName(String name) {
         return new ResponseMessage(settingsRepository.findByParamName(name), 200);
@@ -136,6 +132,10 @@ public class AppServiceImpl implements AppService {
 
         setFullImageDownloadLink(categories, null);
 
+        for(FoodCategory category : categories){
+            category.setItems(null);
+        }
+
         return new ResponseMessage(categories, 200);
     }
 
@@ -146,7 +146,7 @@ public class AppServiceImpl implements AppService {
         return new ResponseMessage(foodCategory, 200);
     }
 
-    @Override
+    /*@Override
     public ResponseMessage searchFoodCategories(String val) {
         List<FoodCategory> categories;
         if(val.isEmpty()){
@@ -158,7 +158,7 @@ public class AppServiceImpl implements AppService {
         setFullImageDownloadLink(categories, null);
 
         return new ResponseMessage(categories, 200);
-    }
+    }*/
 
     /*@Override
     public ResponseMessage searchFoodItems(String val) {
@@ -180,7 +180,12 @@ public class AppServiceImpl implements AppService {
     public ResponseMessage getFoodItems() {
         List<FoodCategory> categories = foodCategoryRepository.findAll().stream()
                 .filter(FoodCategory::isActive)
-                .toList();
+                .sorted(Comparator.comparingInt(FoodCategory::getSortingOrder))
+                .collect(Collectors.toList());
+
+        categories.forEach(f -> f.setItems(null));
+
+
 
         List<FoodItem> foodItems = foodItemRepository.findAll()
                 .stream().filter(item -> item.isActive() && item.getCategory().isActive())
@@ -196,8 +201,6 @@ public class AppServiceImpl implements AppService {
 
     @Override
     public ResponseMessage getAdminFoodItems(int pageNumber, int pageSize, String searchVal) {
-        List<FoodCategory> categories = foodCategoryRepository.findAll();
-
         Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by("sortingOrder"));
         Page<FoodItem> foodItems;
 
@@ -206,20 +209,42 @@ public class AppServiceImpl implements AppService {
         else
             foodItems = foodItemRepository.findByNameContainingIgnoreCase(searchVal, pageable);
 
-        setFullImageDownloadLink(categories, foodItems);
+        setFullImageDownloadLink(null, foodItems);
 
-        //foodItems.sort(Comparator.comparingInt(FoodItem::getSortingOrder));
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("categories", categories);
-        response.put("foodItems", foodItems);
-        return new ResponseMessage(response, 200);
+        return new ResponseMessage(foodItems, 200);
     }
 
-    private void setFullImageDownloadLink(List<FoodCategory> categories, Object foodItems) {
+    @Override
+    public ResponseMessage getAdminFoodCategories(int pageNumber, int pageSize, String searchVal) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by("sortingOrder"));
+        Page<FoodCategory> categories;
+
+        if(searchVal.isEmpty())
+            categories = foodCategoryRepository.findAll(pageable);
+        else
+            categories = foodCategoryRepository.findByNameContainingIgnoreCase(searchVal, pageable);
+
+        setFullImageDownloadLink(categories, null);
+
+        for (FoodCategory foodCategory : categories) {
+            foodCategory.setItems(null);
+        }
+
+        return new ResponseMessage(categories, 200);
+    }
+
+    private void setFullImageDownloadLink(Object categories, Object foodItems) {
         if(categories != null){
-            for(FoodCategory category: categories){
-                category.setImageSource(imageDownloadUrl + category.getImageSource());
+            if(categories instanceof List<?>) {
+                for (FoodCategory category : (List<FoodCategory>) categories) {
+                    category.setImageSource(imageDownloadUrl + category.getImageSource());
+                }
+            }
+
+            if(categories instanceof Page<?>){
+                for (FoodCategory category : (Page<FoodCategory>) categories) {
+                    category.setImageSource(imageDownloadUrl + category.getImageSource());
+                }
             }
         }
 
@@ -242,9 +267,14 @@ public class AppServiceImpl implements AppService {
     @Override
     public ResponseMessage getFoodItemById(Long id) {
         List<FoodCategory> categories = foodCategoryRepository.findAll();
-        FoodItem foodItem = foodItemRepository.findById(id).orElseThrow(() -> new FoodItemNotFoundException("Food item was not found"));
+        FoodItem foodItem = foodItemRepository.findById(id)
+                .orElseThrow(() -> new FoodItemNotFoundException("Food item was not found"));
 
         foodItem.setImageSource(imageDownloadUrl + foodItem.getImageSource());
+
+        for(FoodCategory category : categories){
+            category.setItems(null);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("categories", categories);
@@ -562,11 +592,13 @@ public class AppServiceImpl implements AppService {
     public ResponseMessage getAdminDashboard() {
         Map<String, Object> result = new HashMap<>();
         // pending items for the date
+        result.put("orders_count_by_status", orderRepository.countOrdersByStatus());
 
-        // handled items for the date
+        // sum of delivered order
+        result.put("sum_of_delivered_orders", orderRepository.sumOfDeliveredOrders());
 
 
-        return new ResponseMessage("success", 200);
+        return new ResponseMessage(result, 200);
     }
 
     @Override
@@ -585,6 +617,8 @@ public class AppServiceImpl implements AppService {
     public ResponseMessage updateFoodItemOrder(Map<String, String> values) {
         int draggedItemIndex = Integer.parseInt(values.get("draggedItemIndex"));
         int draggedOverItemIndex = Integer.parseInt(values.get("draggedOverItemIndex"));
+        int pageNumber = Integer.parseInt(values.get("pageNumber"));
+        int pageSize = Integer.parseInt(values.get("pageSize"));
 
         // find all items and sort by sorting order
         List<FoodItem> foodItems = foodItemRepository.findAll();
@@ -603,15 +637,83 @@ public class AppServiceImpl implements AppService {
 
         foodItemRepository.saveAll(foodItems);
 
-        List<FoodCategory> categories = foodCategoryRepository.findAll();
-        foodItems = foodItemRepository.findAll();
-        foodItems.sort(Comparator.comparingInt(FoodItem::getSortingOrder));
+        //List<FoodCategory> categories = foodCategoryRepository.findAll();
 
-        setFullImageDownloadLink(categories, foodItems);
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by("sortingOrder"));
+        Page<FoodItem> updatedFoodItems = foodItemRepository.findAll(pageable);
+        updatedFoodItems = foodItemRepository.findAll(pageable);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("categories", categories);
-        response.put("foodItems", foodItems);
-        return new ResponseMessage(response, 200);
+        setFullImageDownloadLink(null, foodItems);
+
+        return new ResponseMessage(updatedFoodItems, 200);
+    }
+
+    @Override
+    public ResponseMessage updateFoodCategoryOrder(Map<String, String> values) {
+        int draggedItemIndex = Integer.parseInt(values.get("draggedItemIndex"));
+        int draggedOverItemIndex = Integer.parseInt(values.get("draggedOverItemIndex"));
+        int pageNumber = Integer.parseInt(values.get("pageNumber"));
+        int pageSize = Integer.parseInt(values.get("pageSize"));
+
+        // find all items and sort by sorting order
+        List<FoodCategory> foodCategories = foodCategoryRepository.findAll();
+        foodCategories.sort(Comparator.comparingInt(FoodCategory::getSortingOrder));
+
+        for(FoodCategory category : foodCategories){
+            category.setItems(null);
+        }
+
+        List<FoodCategory> toBeRemoved = foodCategories.stream()
+                .filter((item) -> item.getSortingOrder() == draggedItemIndex).toList();
+
+        foodCategories.remove(toBeRemoved.get(0));
+        foodCategories.add(draggedOverItemIndex, toBeRemoved.get(0));
+
+        int index = 0;
+        for(FoodCategory category : foodCategories){
+            category.setSortingOrder(index++);
+        }
+
+        foodCategoryRepository.saveAll(foodCategories);
+
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by("sortingOrder"));
+        Page<FoodCategory> updatedFoodCategories = foodCategoryRepository.findAll(pageable);
+
+        setFullImageDownloadLink(updatedFoodCategories, null);
+
+        return new ResponseMessage(updatedFoodCategories, 200);
+    }
+
+    @Override
+    public ResponseMessage updateOrderStatus(Map<String, String> values) {
+        String action = values.get("action");
+        String status = values.get("status");
+        String uuid = values.get("uuid");
+
+        System.out.println(action);
+        System.out.println(status);
+        System.out.println(uuid);
+
+        Order order = orderRepository.findById(UUID.fromString(uuid))
+                .orElseThrow(() -> new OrderNotFoundException("order was not found"));
+
+        if(!order.getStatus().getDescription().equalsIgnoreCase(status))
+            throw new OrderNotFoundException("order not found");
+
+        if(action.equalsIgnoreCase("cancel")){
+            order.setStatus(OrderStatus.CANCELLED);
+            orderRepository.save(order);
+        }
+
+        if(action.equalsIgnoreCase("proceed")){
+            OrderStatus orderStatus = OrderStatus.getNextStatus(status);
+
+            if(orderStatus != null){
+                order.setStatus(orderStatus);
+                orderRepository.save(order);
+            }
+        }
+
+        return new ResponseMessage(orderRepository.findAll(), 200);
     }
 }
