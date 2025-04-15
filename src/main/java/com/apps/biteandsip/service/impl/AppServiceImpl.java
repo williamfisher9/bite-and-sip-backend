@@ -2,7 +2,6 @@ package com.apps.biteandsip.service.impl;
 
 import com.apps.biteandsip.dao.*;
 import com.apps.biteandsip.dto.*;
-import com.apps.biteandsip.enums.OrderStatus;
 import com.apps.biteandsip.exceptions.CouponNotFoundException;
 import com.apps.biteandsip.exceptions.FoodCategoryNotFoundException;
 import com.apps.biteandsip.exceptions.FoodItemNotFoundException;
@@ -13,7 +12,6 @@ import com.apps.biteandsip.service.StorageService;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
-import com.stripe.param.PaymentIntentConfirmParams;
 import com.stripe.param.PaymentIntentCreateParams;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
@@ -46,6 +45,7 @@ public class AppServiceImpl implements AppService {
     private final UserRepository userRepository;
     private final AuthorityRepository authorityRepository;
     private final OrderRepository orderRepository;
+    private final OrderStatusRepository orderStatusRepository;
 
     @Value("${stripe.api.key}")
     private String stripeApiKey;
@@ -57,7 +57,7 @@ public class AppServiceImpl implements AppService {
     private String imageDownloadUrl;
 
     @Autowired
-    public AppServiceImpl(FoodCategoryRepository foodCategoryRepository, FoodItemRepository foodItemRepository, CouponRepository couponRepository, SettingsRepository settingsRepository, ModelMapper mapper, StorageService storageService, UserRepository userRepository, AuthorityRepository authorityRepository, OrderRepository orderRepository) {
+    public AppServiceImpl(FoodCategoryRepository foodCategoryRepository, FoodItemRepository foodItemRepository, CouponRepository couponRepository, SettingsRepository settingsRepository, ModelMapper mapper, StorageService storageService, UserRepository userRepository, AuthorityRepository authorityRepository, OrderRepository orderRepository, OrderStatusRepository orderStatusRepository) {
         this.foodCategoryRepository = foodCategoryRepository;
         this.foodItemRepository = foodItemRepository;
         this.couponRepository = couponRepository;
@@ -67,6 +67,7 @@ public class AppServiceImpl implements AppService {
         this.userRepository = userRepository;
         this.authorityRepository = authorityRepository;
         this.orderRepository = orderRepository;
+        this.orderStatusRepository = orderStatusRepository;
     }
 
     @Override
@@ -323,7 +324,7 @@ public class AppServiceImpl implements AppService {
         return new ResponseMessage(foodItemRepository.save(foodItem), 200);
     }
 
-    @Override
+    /*@Override
     public ResponseMessage createPaymentIntent(StripePaymentIntentDTO intentDTO) throws StripeException {
         Stripe.apiKey = stripeApiKey;
         PaymentIntentCreateParams params =
@@ -345,7 +346,10 @@ public class AppServiceImpl implements AppService {
         return new ResponseMessage(paymentIntentDetails, 200);
     }
 
-    @Override
+
+     */
+
+    /*@Override
     public ResponseMessage confirmPaymentIntent(String id) {
         Stripe.apiKey = stripeApiKey;
         PaymentIntent resource = null;
@@ -365,7 +369,7 @@ public class AppServiceImpl implements AppService {
         } catch (StripeException e) {
             throw new RuntimeException(e);
         }
-    }
+    }*/
 
     @Override
     public ResponseMessage getCoupons() {
@@ -434,6 +438,10 @@ public class AppServiceImpl implements AppService {
                     .filter(record -> !record.getUserType().equalsIgnoreCase("ADMIN"))
                     .toList();
         }
+
+        for(User user : users){
+            user.setImageSource(imageDownloadUrl + user.getImageSource());
+        }
         
         return new ResponseMessage(users, 200);
     }
@@ -455,6 +463,10 @@ public class AppServiceImpl implements AppService {
             } else {
                 users = userRepository.searchByUsernameAndUserTypeNot(val, "CUSTOMER");
             }
+        }
+
+        for(User user : users){
+            user.setImageSource(imageDownloadUrl + user.getImageSource());
         }
 
         return new ResponseMessage(users, 200);
@@ -479,7 +491,7 @@ public class AppServiceImpl implements AppService {
         order.setCustomer(user);
         order.setCreationDate(LocalDateTime.now());
         order.setLastUpdateDate(LocalDateTime.now());
-        order.setStatus(OrderStatus.RECEIVED);
+        order.setStatus(orderStatusRepository.findByState("RECEIVED").get(0));
 
 
 
@@ -686,34 +698,71 @@ public class AppServiceImpl implements AppService {
 
     @Override
     public ResponseMessage updateOrderStatus(Map<String, String> values) {
-        String action = values.get("action");
-        String status = values.get("status");
-        String uuid = values.get("uuid");
+        String authority = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream().toList().get(0).getAuthority();
 
-        System.out.println(action);
-        System.out.println(status);
-        System.out.println(uuid);
+        if(!authority.equalsIgnoreCase("ROLE_KITCHEN") &&
+                !authority.equalsIgnoreCase("ROLE_WAITER") &&
+                !authority.equalsIgnoreCase("ROLE_ADMIN"))
+            return new ResponseMessage("improper authority type", HttpStatus.BAD_REQUEST.value());
+
+
+        String action = values.get("action");
+        int statusId = Integer.parseInt(values.get("status"));
+        String uuid = values.get("uuid");
 
         Order order = orderRepository.findById(UUID.fromString(uuid))
                 .orElseThrow(() -> new OrderNotFoundException("order was not found"));
 
-        if(!order.getStatus().getDescription().equalsIgnoreCase(status))
-            throw new OrderNotFoundException("order not found");
+        if(order.getStatus().getId() != statusId){
+            List<Order> orders = orderRepository.findAll();
+
+            for(Order order1 : orders){
+                for(OrderItem orderItem : order1.getItems()){
+                    orderItem.getItem().setImageSource(
+                            orderItem.getItem().getImageSource().startsWith("http") ?
+                                    orderItem.getItem().getImageSource() :
+                                    imageDownloadUrl + orderItem.getItem().getImageSource()
+                    );
+                }
+            }
+
+            return new ResponseMessage(orders, 200);
+        }
 
         if(action.equalsIgnoreCase("cancel")){
-            order.setStatus(OrderStatus.CANCELLED);
+            order.setStatus(orderStatusRepository.findByState("CANCELLED").get(0));
             orderRepository.save(order);
         }
 
         if(action.equalsIgnoreCase("proceed")){
-            OrderStatus orderStatus = OrderStatus.getNextStatus(status);
+            OrderStatus orderStatus = order.getStatus();
 
-            if(orderStatus != null){
-                order.setStatus(orderStatus);
+            //OrderStatus orderStatus = OrderStatus.getNextStatus(status);
+            if(!orderStatus.isTerminalState()){
+                order.setStatus(orderStatusRepository.findByState(orderStatus.getNextState()).get(0));
+                order.setUpdatedBy((String) SecurityContextHolder.getContext().getAuthentication().getPrincipal());
                 orderRepository.save(order);
             }
         }
 
-        return new ResponseMessage(orderRepository.findAll(), 200);
+        List<Order> orders = orderRepository.findAll();
+
+        for(Order order1 : orders){
+            for(OrderItem orderItem : order1.getItems()){
+                orderItem.getItem().setImageSource(
+                        orderItem.getItem().getImageSource().startsWith("http") ?
+                                orderItem.getItem().getImageSource() :
+                                imageDownloadUrl + orderItem.getItem().getImageSource()
+                );
+            }
+        }
+
+        return new ResponseMessage(orders, 200);
+    }
+
+    @Override
+    public ResponseMessage getAdminSettings() {
+        return new ResponseMessage(settingsRepository.findAll(), 200);
     }
 }

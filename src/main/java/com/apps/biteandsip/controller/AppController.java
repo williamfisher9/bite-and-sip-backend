@@ -1,16 +1,8 @@
 package com.apps.biteandsip.controller;
 
 import com.apps.biteandsip.dto.*;
-import com.apps.biteandsip.model.FoodItem;
-import com.apps.biteandsip.model.Order;
-import com.apps.biteandsip.model.User;
 import com.apps.biteandsip.service.AppService;
-import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
-import com.stripe.model.PaymentIntent;
-import com.stripe.param.PaymentIntentConfirmParams;
-import com.stripe.param.PaymentIntentCreateParams;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
@@ -20,9 +12,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,9 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.Principal;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -82,6 +69,12 @@ public class AppController {
     @RequestMapping(value = "/public/food-items/category/{id}", method = RequestMethod.GET)
     public ResponseEntity<ResponseMessage> getFoodItemsByCategoryId(@PathVariable("id") Long id){
         ResponseMessage responseMessage = appService.getFoodItemsByCategoryId(id);
+        return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
+    }
+
+    @RequestMapping(value = "/admin/settings", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> getAdminSettings(){
+        ResponseMessage responseMessage = appService.getAdminSettings();
         return new ResponseEntity<>(responseMessage, HttpStatus.valueOf(responseMessage.getStatus()));
     }
 
@@ -160,12 +153,6 @@ public class AppController {
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
-    /*@RequestMapping(value = "/admin/food-items", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> createFoodItem(@RequestBody @Valid FoodItemDTO foodItemDTO){
-        ResponseMessage responseMessage = appService.createFoodItem(foodItemDTO);
-        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
-    }*/
-
     @RequestMapping(value = "/admin/food-items/update-order", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> updateFoodItemOrder(@RequestBody Map<String, String> values){
         ResponseMessage responseMessage = appService.updateFoodItemOrder(values);
@@ -178,19 +165,9 @@ public class AppController {
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
-    @RequestMapping(value = "/checkout/create-payment-intent", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> createPaymentIntent(@RequestBody StripePaymentIntentDTO intentDTO) throws StripeException {
-        return new ResponseEntity<>(appService.createPaymentIntent(intentDTO), HttpStatus.OK);
-    }
-
-    @RequestMapping(value = "/checkout/{id}/confirm", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> confirmPaymentIntent(@PathVariable("id") String id) {
-        return new ResponseEntity<>(appService.confirmPaymentIntent(id), HttpStatus.OK);
-    }
-
-
-
-
+    /*
+    * Coupons endpoints
+    * */
     @RequestMapping(value = "/admin/coupons/new", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> createCoupon(@RequestBody CouponDTO couponDTO){
         ResponseMessage responseMessage = appService.createCoupon(couponDTO);
@@ -259,24 +236,8 @@ public class AppController {
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
-
-    @RequestMapping(value = "/checkout/confirm-order", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> confirmOrder(@RequestBody Map<String, Object> items)  {
-        return new ResponseEntity<>(appService.confirmOrder(items), HttpStatus.OK);
-    }
-
-    @RequestMapping(value = "/checkout/create-confirm-intent", method = RequestMethod.POST)
-    public ResponseEntity<ResponseMessage> createConfirmIntent(@RequestBody Map<String, Object> items)  {
-        return new ResponseEntity<>(appService.confirmOrder(items), HttpStatus.OK);
-    }
-
     @RequestMapping(value = "/admin/orders/update", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> updateOrderStatus(@RequestBody Map<String, String> values)  {
-        String authority = SecurityContextHolder.getContext().getAuthentication()
-                .getAuthorities().stream().toList().get(0).getAuthority();
-        if(!authority.equalsIgnoreCase("ROLE_KITCHEN") && !authority.equalsIgnoreCase("ROLE_WAITER"))
-            return new ResponseEntity<>(new ResponseMessage("improper authority type", 400), HttpStatus.BAD_REQUEST);
-
         return new ResponseEntity<>(appService.updateOrderStatus(values), HttpStatus.OK);
     }
 
@@ -304,4 +265,26 @@ public class AppController {
         ResponseMessage responseMessage = appService.getAdminDashboard();
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
+
+    @RequestMapping(value = "/checkout/create-confirm-intent", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> createConfirmIntent(@RequestBody Map<String, Object> items)  {
+        return new ResponseEntity<>(appService.confirmOrder(items), HttpStatus.OK);
+    }
+
+    /*
+    @RequestMapping(value = "/checkout/create-payment-intent", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> createPaymentIntent(@RequestBody StripePaymentIntentDTO intentDTO) throws StripeException {
+        return new ResponseEntity<>(appService.createPaymentIntent(intentDTO), HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/checkout/confirm-order", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> confirmOrder(@RequestBody Map<String, Object> items)  {
+        return new ResponseEntity<>(appService.confirmOrder(items), HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/checkout/{id}/confirm", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> confirmPaymentIntent(@PathVariable("id") String id) {
+        return new ResponseEntity<>(appService.confirmPaymentIntent(id), HttpStatus.OK);
+    }
+    */
 }

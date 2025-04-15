@@ -1,15 +1,10 @@
 package com.apps.biteandsip.model;
 
-import com.apps.biteandsip.enums.OrderStatus;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.stripe.model.Customer;
 import jakarta.persistence.*;
-import jakarta.validation.Valid;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,30 +17,29 @@ public class Order implements Serializable {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID uuid;
 
-    private OrderStatus status;
     private String paymentId;
     private LocalDateTime creationDate;
     private LocalDateTime lastUpdateDate;
-
     private BigDecimal tax;
     private BigDecimal deliveryFee;
     private String coupon;
     private BigDecimal couponAmount;
     private BigDecimal totalPrice;
-
+    private String updatedBy;
 
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "customer_id")
     private User customer;
 
-
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "status_id", referencedColumnName = "id")
+    private OrderStatus status;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private Set<OrderItem> items;
 
     public Order() {
     }
-
 
     public UUID getUuid() {
         return uuid;
@@ -55,28 +49,12 @@ public class Order implements Serializable {
         this.uuid = uuid;
     }
 
-    public OrderStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(OrderStatus status) {
-        this.status = status;
-    }
-
     public String getPaymentId() {
         return paymentId;
     }
 
     public void setPaymentId(String paymentId) {
         this.paymentId = paymentId;
-    }
-
-    public User getCustomer() {
-        return customer;
-    }
-
-    public void setCustomer(User customer) {
-        this.customer = customer;
     }
 
     public LocalDateTime getCreationDate() {
@@ -93,14 +71,6 @@ public class Order implements Serializable {
 
     public void setLastUpdateDate(LocalDateTime lastUpdateDate) {
         this.lastUpdateDate = lastUpdateDate;
-    }
-
-    public Set<OrderItem> getItems() {
-        return items;
-    }
-
-    public void setItems(Set<OrderItem> items) {
-        this.items = items;
     }
 
     public BigDecimal getTax() {
@@ -141,5 +111,37 @@ public class Order implements Serializable {
 
     public void setTotalPrice(BigDecimal totalPrice) {
         this.totalPrice = totalPrice;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    public User getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(User customer) {
+        this.customer = customer;
+    }
+
+    public OrderStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(OrderStatus status) {
+        this.status = status;
+    }
+
+    public Set<OrderItem> getItems() {
+        return items;
+    }
+
+    public void setItems(Set<OrderItem> items) {
+        this.items = items;
     }
 }

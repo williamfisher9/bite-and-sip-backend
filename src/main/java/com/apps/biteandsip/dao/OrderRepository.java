@@ -19,6 +19,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     @Query(value = "SELECT c.status, COUNT(c.status) FROM Order AS c GROUP BY c.status ORDER BY c.status DESC")
     List<Object[]> countOrdersByStatus();
 
-    @Query(value = "SELECT sum(c.totalPrice) FROM Order AS c where c.status=DELIVERED")
+    @Query(value = "SELECT sum(c.totalPrice) FROM Order AS c where c.status.state='DELIVERED'")
     Object sumOfDeliveredOrders();
 }

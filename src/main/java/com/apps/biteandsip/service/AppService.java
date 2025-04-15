@@ -29,8 +29,8 @@ public interface AppService {
     ResponseMessage getFoodItemsByCategoryId(Long id);
     ResponseMessage updateFoodItem(Long id ,String name, boolean active, MultipartFile file, String price, String description, Long categoryId);
 
-    ResponseMessage createPaymentIntent(StripePaymentIntentDTO intentDTO) throws StripeException;
-    ResponseMessage confirmPaymentIntent(String id);
+    //ResponseMessage createPaymentIntent(StripePaymentIntentDTO intentDTO) throws StripeException;
+    //ResponseMessage confirmPaymentIntent(String id);
 
     ResponseMessage getCoupons();
     ResponseMessage createCoupon(CouponDTO couponDTO);
@@ -59,4 +59,6 @@ public interface AppService {
     ResponseMessage updateFoodCategoryOrder(Map<String, String> values);
 
     ResponseMessage updateOrderStatus(Map<String, String> values);
+
+    ResponseMessage getAdminSettings();
 }

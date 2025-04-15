@@ -43,6 +43,7 @@ public class AuthServiceImpl implements AuthService {
     private final StorageService storageService;
     private final OrderRepository orderRepository;
     private final UserTokenRepository userTokenRepository;
+    private final SettingsRepository settingsRepository;
 
     @Value("${image.download.url}")
     private String imageDownloadUrl;
@@ -51,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
     private String backendUrl;
 
     @Autowired
-    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, JdbcTemplate jdbcTemplate, StorageService storageService, OrderRepository orderRepository, UserTokenRepository userTokenRepository){
+    public AuthServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, ModelMapper modelMapper, AuthorityRepository authorityRepository, EmailService emailService, JdbcTemplate jdbcTemplate, StorageService storageService, OrderRepository orderRepository, UserTokenRepository userTokenRepository, SettingsRepository settingsRepository){
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
@@ -63,6 +64,7 @@ public class AuthServiceImpl implements AuthService {
         this.storageService = storageService;
         this.orderRepository = orderRepository;
         this.userTokenRepository = userTokenRepository;
+        this.settingsRepository = settingsRepository;
     }
 
     @Override
@@ -120,6 +122,7 @@ public class AuthServiceImpl implements AuthService {
             response.put("authorityId", String.valueOf(((User) authentication.getPrincipal()).getAuthorities().stream().map((item) -> ((Authority) item).getId()).toList().get(0)));
             response.put("targetUrl", generateTargetUrlFromAuthority(authentication));
             response.put("menuItems", getUserMenuItems(authentication));
+            response.put("dashboardRefreshInterval", settingsRepository.findByParamName("DASHBOARD_AUTO_REFRESH_INTERVAL_IN_SECONDS").get().getParamValue());
 
             if(String.valueOf(((User) authentication.getPrincipal()).getId()).equalsIgnoreCase("1"))
                 response.put("homePageUrl", "/biteandsip/admin/dashboard");
