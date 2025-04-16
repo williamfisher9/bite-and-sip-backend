@@ -19,6 +19,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -119,12 +120,23 @@ public class AuthServiceImpl implements AuthService {
             response.put("token", jwtUtils.generateToken(authentication));
             response.put("username", ((UserDetails) authentication.getPrincipal()).getUsername());
             response.put("userId", String.valueOf(((User) authentication.getPrincipal()).getId()));
-            response.put("authorityId", String.valueOf(((User) authentication.getPrincipal()).getAuthorities().stream().map((item) -> ((Authority) item).getId()).toList().get(0)));
+            response.put("authorityId", String.valueOf(((User) authentication.getPrincipal()).getAuthorities().stream().map((item) -> ((Authority) item).getAuthority()).toList().get(0)));
             response.put("targetUrl", generateTargetUrlFromAuthority(authentication));
             response.put("menuItems", getUserMenuItems(authentication));
+            response.put("isAuthenticated", authentication.isAuthenticated());
             response.put("dashboardRefreshInterval", settingsRepository.findByParamName("DASHBOARD_AUTO_REFRESH_INTERVAL_IN_SECONDS").get().getParamValue());
 
-            if(String.valueOf(((User) authentication.getPrincipal()).getId()).equalsIgnoreCase("1"))
+            boolean isAdmin = false;
+
+            for(GrantedAuthority authority : authentication.getAuthorities()){
+                if(authority.getAuthority().equalsIgnoreCase("ROLE_ADMIN") ||
+                        authority.getAuthority().equalsIgnoreCase("ROLE_KITCHEN") ||
+                        authority.getAuthority().equalsIgnoreCase("ROLE_WAITER")){
+                    isAdmin = true;
+                }
+            }
+
+            if(isAdmin)
                 response.put("homePageUrl", "/biteandsip/admin/dashboard");
             else
                 response.put("homePageUrl", "/biteandsip/home");
