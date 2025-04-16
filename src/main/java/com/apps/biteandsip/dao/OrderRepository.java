@@ -1,6 +1,7 @@
 package com.apps.biteandsip.dao;
 
 import com.apps.biteandsip.model.Order;
+import com.apps.biteandsip.model.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,4 +22,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     @Query(value = "SELECT sum(c.totalPrice) FROM Order AS c where c.status.state='DELIVERED'")
     Object sumOfDeliveredOrders();
+
+    long countByStatus(OrderStatus status);
 }

@@ -126,6 +126,7 @@ public class AppConfigs {
 
                 Settings dashboardAutoRefreshIntervalSeconds = new Settings();
                 dashboardAutoRefreshIntervalSeconds.setParamName("DASHBOARD_AUTO_REFRESH_INTERVAL_IN_SECONDS");
+                dashboardAutoRefreshIntervalSeconds.setParamDesc("DASHBOARD REFRESH RATE");
                 dashboardAutoRefreshIntervalSeconds.setParamValue("60");
                 settingsRepository.save(dashboardAutoRefreshIntervalSeconds);
 

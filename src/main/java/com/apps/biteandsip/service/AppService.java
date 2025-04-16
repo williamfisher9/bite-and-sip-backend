@@ -5,6 +5,7 @@ import com.apps.biteandsip.model.Order;
 import com.stripe.exception.StripeException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
@@ -32,15 +33,15 @@ public interface AppService {
     //ResponseMessage createPaymentIntent(StripePaymentIntentDTO intentDTO) throws StripeException;
     //ResponseMessage confirmPaymentIntent(String id);
 
-    ResponseMessage getCoupons();
+    ResponseMessage getCoupons(int pageNumber, int pageSize, String searchVal);
     ResponseMessage createCoupon(CouponDTO couponDTO);
     ResponseMessage getCouponById(Long id);
     ResponseMessage getCouponByCode(String code);
     ResponseMessage updateCoupon(Long id, CouponDTO couponDTO);
-    ResponseMessage searchCoupons(String val);
+    //ResponseMessage searchCoupons(String val);
 
-    ResponseMessage getUsersByType(String userType);
-    ResponseMessage searchUsers(String val, String userType);
+    ResponseMessage getUsersByType(String userType, int pageNumber, int pageSize, String searchVal);
+    //ResponseMessage searchUsers(String val, String userType);
 
     ResponseMessage getEmployeeRoles();
 
@@ -61,4 +62,5 @@ public interface AppService {
     ResponseMessage updateOrderStatus(Map<String, String> values);
 
     ResponseMessage getAdminSettings();
+    ResponseMessage updateSettingsParam(Map<String, String> values, Long id);
 }

@@ -180,11 +180,21 @@ public class AppController {
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
-    @RequestMapping(value = "/admin/coupons", method = RequestMethod.GET)
+    /*@RequestMapping(value = "/admin/coupons", method = RequestMethod.GET)
     public ResponseEntity<ResponseMessage> getCoupons(){
         ResponseMessage responseMessage = appService.getCoupons();
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
+    }*/
+
+    @RequestMapping(value = "/admin/coupons", method = RequestMethod.GET)
+    public ResponseEntity<ResponseMessage> getAdminCoupons(@RequestParam("page_number") int pageNumber,
+                                                          @RequestParam("page_size") int pageSize,
+                                                          @RequestParam("search_val") String searchVal){
+        ResponseMessage responseMessage = appService.getCoupons(pageNumber, pageSize, searchVal);
+        return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
+
+
 
     @RequestMapping(value = "/admin/coupons/update/{id}", method = RequestMethod.PUT)
     public ResponseEntity<ResponseMessage> updateFoodCategory(@PathVariable("id") Long id, @RequestBody CouponDTO couponDTO){
@@ -192,7 +202,7 @@ public class AppController {
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
-    @RequestMapping(value = "/admin/coupons/search", method = RequestMethod.POST)
+    /*@RequestMapping(value = "/admin/coupons/search", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> adminSearchCoupons(@RequestBody Map<String, String> values){
         ResponseMessage responseMessage = null;
         if(!values.get("val").equalsIgnoreCase("-")){
@@ -202,7 +212,7 @@ public class AppController {
         }
 
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
-    }
+    }*/
 
     @RequestMapping(value = "/public/coupons/code/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseMessage> getCouponByCode(@PathVariable("code") String code){
@@ -213,12 +223,15 @@ public class AppController {
 
 
     @RequestMapping(value = "/admin/users/{userType}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseMessage> adminGetUsersByType(@PathVariable("userType") String userType){
-        ResponseMessage responseMessage = appService.getUsersByType(userType);
+    public ResponseEntity<ResponseMessage> adminGetUsersByType(@PathVariable("userType") String userType,
+                                                               @RequestParam("page_number") int pageNumber,
+                                                                @RequestParam("page_size") int pageSize,
+                                                                @RequestParam("search_val") String searchVal){
+        ResponseMessage responseMessage = appService.getUsersByType(userType, pageNumber, pageSize, searchVal);
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
     }
 
-    @RequestMapping(value = "/admin/users/{userType}/search", method = RequestMethod.POST)
+    /*@RequestMapping(value = "/admin/users/{userType}/search", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> adminSearchCustomers(@PathVariable("userType") String userType, @RequestBody Map<String, String> values){
         ResponseMessage responseMessage = null;
         if(!values.get("val").equalsIgnoreCase("")){
@@ -228,7 +241,7 @@ public class AppController {
         }
 
         return new ResponseEntity<>(responseMessage, HttpStatusCode.valueOf(responseMessage.getStatus()));
-    }
+    }*/
 
     @RequestMapping(value = "/admin/roles", method = RequestMethod.GET)
     public ResponseEntity<ResponseMessage> adminGetRoles(){
@@ -239,6 +252,12 @@ public class AppController {
     @RequestMapping(value = "/admin/orders/update", method = RequestMethod.POST)
     public ResponseEntity<ResponseMessage> updateOrderStatus(@RequestBody Map<String, String> values)  {
         return new ResponseEntity<>(appService.updateOrderStatus(values), HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/admin/settings/update/{id}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseMessage> updateSettingsParam(@RequestBody Map<String, String> values,
+                                                               @PathVariable("id") Long id)  {
+        return new ResponseEntity<>(appService.updateSettingsParam(values, id), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/checkout/authenticate-user/{customerId}", method = RequestMethod.GET)

@@ -2,6 +2,8 @@ package com.apps.biteandsip.dao;
 
 import com.apps.biteandsip.model.Coupon;
 import com.apps.biteandsip.model.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -19,10 +21,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByUsernameContainingIgnoreCase(String val);
 
     @Query(value = "SELECT * FROM users m WHERE m.username LIKE %:username% and m.user_type = :userType", nativeQuery = true)
-    List<User> searchByUsernameAndUserType(String username, String userType);
+    Page<User> searchByUsernameAndUserType(String username, String userType, Pageable pageable);
 
     @Query(value = "SELECT * FROM users m WHERE m.username LIKE %:username% and m.user_type != :userType", nativeQuery = true)
     List<User> searchByUsernameAndUserTypeNot(String username, String userType);
+
+    Page<User> findByUsernameContainingIgnoreCaseAndAndUserTypeNotIn(String username, List<String> types, Pageable pageable);
 
     @Modifying
     @Transactional
@@ -35,7 +39,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     void updateUserAuthorities(Long id, String firstName, String lastName, String username);
 
 
-    List<User> findByUserType(String type);
+    Page<User> findByUserType(String type, Pageable pageable);
 
-    List<User> findByUserTypeNot(String type);
+    Page<User> findByUserTypeNotIn(List<String> types, Pageable pageable);
 }

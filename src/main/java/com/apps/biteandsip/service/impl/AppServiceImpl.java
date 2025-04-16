@@ -46,6 +46,7 @@ public class AppServiceImpl implements AppService {
     private final AuthorityRepository authorityRepository;
     private final OrderRepository orderRepository;
     private final OrderStatusRepository orderStatusRepository;
+    private final OrderItemRepository orderItemRepository;
 
     @Value("${stripe.api.key}")
     private String stripeApiKey;
@@ -57,7 +58,7 @@ public class AppServiceImpl implements AppService {
     private String imageDownloadUrl;
 
     @Autowired
-    public AppServiceImpl(FoodCategoryRepository foodCategoryRepository, FoodItemRepository foodItemRepository, CouponRepository couponRepository, SettingsRepository settingsRepository, ModelMapper mapper, StorageService storageService, UserRepository userRepository, AuthorityRepository authorityRepository, OrderRepository orderRepository, OrderStatusRepository orderStatusRepository) {
+    public AppServiceImpl(FoodCategoryRepository foodCategoryRepository, FoodItemRepository foodItemRepository, CouponRepository couponRepository, SettingsRepository settingsRepository, ModelMapper mapper, StorageService storageService, UserRepository userRepository, AuthorityRepository authorityRepository, OrderRepository orderRepository, OrderStatusRepository orderStatusRepository, OrderItemRepository orderItemRepository) {
         this.foodCategoryRepository = foodCategoryRepository;
         this.foodItemRepository = foodItemRepository;
         this.couponRepository = couponRepository;
@@ -68,6 +69,7 @@ public class AppServiceImpl implements AppService {
         this.authorityRepository = authorityRepository;
         this.orderRepository = orderRepository;
         this.orderStatusRepository = orderStatusRepository;
+        this.orderItemRepository = orderItemRepository;
     }
 
     @Override
@@ -372,8 +374,16 @@ public class AppServiceImpl implements AppService {
     }*/
 
     @Override
-    public ResponseMessage getCoupons() {
-        return new ResponseMessage(couponRepository.findAll(), 200);
+    public ResponseMessage getCoupons(int pageNumber, int pageSize, String searchVal) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<Coupon> coupons;
+
+        if(searchVal.isEmpty())
+            coupons = couponRepository.findAll(pageable);
+        else
+            coupons = couponRepository.findByCodeContainingIgnoreCase(searchVal, pageable);
+
+        return new ResponseMessage(coupons, 200);
     }
 
     @Override
@@ -416,35 +426,52 @@ public class AppServiceImpl implements AppService {
         return new ResponseMessage(couponRepository.save(coupon), 200);
     }
 
-    @Override
+    /*@Override
     public ResponseMessage searchCoupons(String val) {
         List<Coupon> coupons;
         if(val.isEmpty()){
             coupons = couponRepository.findAll();
         } else {
-            coupons = couponRepository.findByCodeContainingIgnoreCase(val);
+            coupons = couponRepository.findByCodeContainingIgnoreCase(val, pagea);
         }
 
         return new ResponseMessage(coupons, 200);
-    }
+    }*/
 
     @Override
-    public ResponseMessage getUsersByType(String userType) {
-        List<User> users = new ArrayList<>();
-        if(userType.equalsIgnoreCase("customers")){
-            users = userRepository.findByUserType("CUSTOMER");
-        } else if(userType.equalsIgnoreCase("employees")) {
-            users = userRepository.findByUserTypeNot("CUSTOMER").stream()
-                    .filter(record -> !record.getUserType().equalsIgnoreCase("ADMIN"))
-                    .toList();
+    public ResponseMessage getUsersByType(String userType, int pageNumber, int pageSize, String searchVal) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+
+        Page<User> users = null;
+
+        if(searchVal.isEmpty()){
+            if(userType.equalsIgnoreCase("customers")){
+                users = userRepository.findByUserType("CUSTOMER", pageable);
+            } else if(userType.equalsIgnoreCase("employees")) {
+                users = userRepository.findByUserTypeNotIn(List.of("CUSTOMER", "ADMIN"), pageable);
+            }
+        } else {
+            if(userType.equalsIgnoreCase("customers")){
+                users = userRepository.searchByUsernameAndUserType(searchVal, "CUSTOMER", pageable);
+            } else if(userType.equalsIgnoreCase("employees")) {
+                users = userRepository
+                        .findByUsernameContainingIgnoreCaseAndAndUserTypeNotIn(searchVal, List.of("CUSTOMER", "ADMIN"), pageable);
+            }
         }
 
-        for(User user : users){
-            user.setImageSource(imageDownloadUrl + user.getImageSource());
+        if(users != null){
+            for(User user : users){
+                if(user.getImageSource() != null){
+                    user.setImageSource(imageDownloadUrl + user.getImageSource());
+                }
+            }
         }
-        
+
         return new ResponseMessage(users, 200);
     }
+
+
+
 
     @Override
     public ResponseMessage getCouponByCode(String code) {
@@ -452,7 +479,7 @@ public class AppServiceImpl implements AppService {
         return new ResponseMessage(coupon, 200);
     }
 
-    @Override
+    /*@Override
     public ResponseMessage searchUsers(String val, String userType) {
         List<User> users;
         if(val.isEmpty()){
@@ -466,11 +493,13 @@ public class AppServiceImpl implements AppService {
         }
 
         for(User user : users){
-            user.setImageSource(imageDownloadUrl + user.getImageSource());
+            if(user.getImageSource() != null){
+                user.setImageSource(imageDownloadUrl + user.getImageSource());
+            }
         }
 
         return new ResponseMessage(users, 200);
-    }
+    }*/
 
     @Override
     public ResponseMessage getEmployeeRoles() {
@@ -604,7 +633,44 @@ public class AppServiceImpl implements AppService {
     public ResponseMessage getAdminDashboard() {
         Map<String, Object> result = new HashMap<>();
         // pending items for the date
+        result.put("orders_count_delivered", orderRepository
+                .countByStatus(orderStatusRepository.findByState("DELIVERED").get(0)));
+
+        result.put("orders_count_cancelled", orderRepository
+                .countByStatus(orderStatusRepository.findByState("CANCELLED").get(0)));
+
+        result.put("orders_count_pending_kitchen",
+                orderRepository.countByStatus(orderStatusRepository.findByState("RECEIVED").get(0)) +
+                orderRepository.countByStatus(orderStatusRepository.findByState("ACCEPTED").get(0)) +
+                orderRepository.countByStatus(orderStatusRepository.findByState("PREPARING").get(0))
+        );
+
+        result.put("orders_count_pending_delivery",
+                orderRepository.countByStatus(orderStatusRepository.findByState("ON_THE_WAY").get(0)) +
+                        orderRepository.countByStatus(orderStatusRepository.findByState("READY_FOR_DELIVERY").get(0))
+        );
+
+        result.put("top_selling_items", orderItemRepository.getTopSellingItems());
+
+        result.put("orders_count_pending_received",
+                orderRepository.countByStatus(orderStatusRepository.findByState("RECEIVED").get(0)));
+
+        result.put("orders_count_pending_preparing",
+                orderRepository.countByStatus(orderStatusRepository.findByState("PREPARING").get(0)));
+
+        result.put("orders_count_pending_accepted",
+                orderRepository.countByStatus(orderStatusRepository.findByState("ACCEPTED").get(0)));
+
+        result.put("orders_count_pending_delivery_on_the_way",
+                orderRepository.countByStatus(orderStatusRepository.findByState("ON_THE_WAY").get(0)));
+
+        result.put("orders_count_pending_delivery_ready_for_delivery",
+                orderRepository.countByStatus(orderStatusRepository.findByState("READY_FOR_DELIVERY").get(0)));
+
         result.put("orders_count_by_status", orderRepository.countOrdersByStatus());
+
+        result.put("total_customer", userRepository
+                .findByUserType("CUSTOMER", null).getTotalElements());
 
         // sum of delivered order
         result.put("sum_of_delivered_orders", orderRepository.sumOfDeliveredOrders());
@@ -764,5 +830,18 @@ public class AppServiceImpl implements AppService {
     @Override
     public ResponseMessage getAdminSettings() {
         return new ResponseMessage(settingsRepository.findAll(), 200);
+    }
+
+    @Override
+    public ResponseMessage updateSettingsParam(Map<String, String> values, Long id) {
+        Settings param = settingsRepository
+                .findById(id).orElseThrow(() -> new RuntimeException("param was not found"));
+
+        String value = values.get("value");
+        param.setParamValue(value);
+
+        settingsRepository.save(param);
+
+        return new ResponseMessage("parameter updated successfully", 200);
     }
 }
