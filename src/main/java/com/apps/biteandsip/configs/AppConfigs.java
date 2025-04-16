@@ -45,21 +45,19 @@ public class AppConfigs {
     @Bean
     public CommandLineRunner startup() {
         return args -> {
-            OrderStatus orderStatus1 = new OrderStatus(1, "RECEIVED", "ACCEPTED", false);
-            OrderStatus orderStatus2 = new OrderStatus(2, "ACCEPTED", "PREPARING", false);
-            OrderStatus orderStatus3 = new OrderStatus(3, "PREPARING", "READY_FOR_DELIVERY", false);
-            OrderStatus orderStatus4 = new OrderStatus(4, "READY_FOR_DELIVERY", "ON_THE_WAY", false);
-            OrderStatus orderStatus5 = new OrderStatus(5, "ON_THE_WAY", "DELIVERED", false);
-            OrderStatus orderStatus6 = new OrderStatus(6, "DELIVERED", "", true);
-            OrderStatus orderStatus7 = new OrderStatus(7, "CANCELLED", "", true);
-
-            orderStatusRepository.saveAll(List.of(orderStatus1, orderStatus2, orderStatus3, orderStatus4
-                    , orderStatus5, orderStatus6, orderStatus7));
-
             if(authorityRepository.findAll().isEmpty()) {
                 LOG.info("Initializing database...");
 
+                OrderStatus orderStatus1 = new OrderStatus(1, "RECEIVED", "ACCEPTED", false);
+                OrderStatus orderStatus2 = new OrderStatus(2, "ACCEPTED", "PREPARING", false);
+                OrderStatus orderStatus3 = new OrderStatus(3, "PREPARING", "READY_FOR_DELIVERY", false);
+                OrderStatus orderStatus4 = new OrderStatus(4, "READY_FOR_DELIVERY", "ON_THE_WAY", false);
+                OrderStatus orderStatus5 = new OrderStatus(5, "ON_THE_WAY", "DELIVERED", false);
+                OrderStatus orderStatus6 = new OrderStatus(6, "DELIVERED", "", true);
+                OrderStatus orderStatus7 = new OrderStatus(7, "CANCELLED", "", true);
 
+                orderStatusRepository.saveAll(List.of(orderStatus1, orderStatus2, orderStatus3, orderStatus4
+                        , orderStatus5, orderStatus6, orderStatus7));
 
                 menuRepository.save(new Menu("PUBLIC", "HOME", "/biteandsip/home"));
                 menuRepository.save(new Menu("PUBLIC", "MENU", "/biteandsip/menu"));
