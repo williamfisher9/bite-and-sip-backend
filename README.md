@@ -1,6 +1,4 @@
-# 🍽️ Bite & Sip - A Restaurant Management App – Frontend
-
-# 🍽️ Restaurant Management App – Backend
+# 🍽️ Bite & Sip - Restaurant Management App – Backend
 
 This is the backend API for a full-featured restaurant management and e-commerce platform. Built with Java and Spring Boot, it powers user authentication, menu management, order processing, and secure payment handling via Stripe.
 
